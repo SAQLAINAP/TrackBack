@@ -3,6 +3,7 @@ import { useLessonMedia } from "../lib/queries";
 import { deleteMedia } from "../lib/repo";
 import { ensureMediaBlob } from "../lib/sync";
 import type { MediaItem } from "../lib/types";
+import { IconTrash } from "./icons";
 
 export function MediaGallery({ lessonId }: { lessonId: string }) {
   const media = useLessonMedia(lessonId);
@@ -55,7 +56,7 @@ function useObjectUrl(item: MediaItem): string | null {
 function ImageThumb({ item }: { item: MediaItem }) {
   const url = useObjectUrl(item);
   return (
-    <div className="relative group aspect-square rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900">
+    <div className="relative aspect-square rounded-xl overflow-hidden border border-black/[0.06] dark:border-white/[0.08] bg-black/[0.04] dark:bg-white/[0.04]">
       {url ? (
         <a href={url} target="_blank" rel="noreferrer">
           <img src={url} alt="note attachment" className="h-full w-full object-cover" />
@@ -63,12 +64,13 @@ function ImageThumb({ item }: { item: MediaItem }) {
       ) : (
         <div className="h-full w-full grid place-items-center text-xs text-ink-faint">…</div>
       )}
+      {/* Always visible — touch devices have no hover state. */}
       <button
         onClick={() => deleteMedia(item.id)}
-        className="absolute top-1 right-1 h-6 w-6 rounded-full bg-black/60 text-white text-xs opacity-0 group-hover:opacity-100 transition"
-        title="Delete"
+        className="absolute top-1.5 right-1.5 h-7 w-7 grid place-items-center rounded-full bg-black/55 backdrop-blur text-white active:scale-90 transition"
+        aria-label="Delete image"
       >
-        ✕
+        <IconTrash size={14} />
       </button>
     </div>
   );
@@ -77,18 +79,18 @@ function ImageThumb({ item }: { item: MediaItem }) {
 function AudioRow({ item }: { item: MediaItem }) {
   const url = useObjectUrl(item);
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-zinc-200 dark:border-zinc-800 px-3 py-2">
+    <div className="flex items-center gap-2 rounded-xl border border-black/[0.06] dark:border-white/[0.08] bg-black/[0.02] dark:bg-white/[0.03] pl-2.5 pr-1.5 py-2">
       {url ? (
-        <audio controls src={url} className="h-8 flex-1" />
+        <audio controls src={url} className="h-8 min-w-0 flex-1" />
       ) : (
         <span className="text-xs text-ink-faint flex-1">Loading audio…</span>
       )}
       <button
         onClick={() => deleteMedia(item.id)}
-        className="text-ink-faint hover:text-rose-500 text-sm"
-        title="Delete"
+        className="h-9 w-9 shrink-0 grid place-items-center rounded-xl text-ink-faint hover:text-rose-500 hover:bg-rose-500/10 active:scale-90 transition"
+        aria-label="Delete recording"
       >
-        ✕
+        <IconTrash size={16} />
       </button>
     </div>
   );

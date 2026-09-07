@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { addMedia } from "../lib/repo";
 import { Button } from "./ui";
+import { IconMic, IconStop } from "./icons";
 
 export function VoiceRecorder({ lessonId }: { lessonId: string }) {
   const [recording, setRecording] = useState(false);
@@ -38,19 +39,28 @@ export function VoiceRecorder({ lessonId }: { lessonId: string }) {
     if (timer.current) clearInterval(timer.current);
   };
 
+  const mmss = `${String(Math.floor(elapsed / 60)).padStart(2, "0")}:${String(
+    elapsed % 60,
+  ).padStart(2, "0")}`;
+
+  // Renders as a single full-width button so it lines up pixel-for-pixel with
+  // the "Image" button sharing its grid row.
   return (
-    <div className="flex items-center gap-3">
+    <div className="min-w-0">
       {recording ? (
-        <Button variant="danger" size="sm" onClick={stop}>
-          ■ Stop · {String(Math.floor(elapsed / 60)).padStart(2, "0")}:
-          {String(elapsed % 60).padStart(2, "0")}
+        <Button variant="danger" size="lg" full onClick={stop}>
+          <IconStop size={15} className="animate-pulse-rec" />
+          <span className="font-mono tabular-nums">{mmss}</span>
         </Button>
       ) : (
-        <Button variant="outline" size="sm" onClick={start}>
-          🎙️ Record voice note
+        <Button variant="outline" size="lg" full onClick={start}>
+          <IconMic size={17} />
+          Voice
         </Button>
       )}
-      {error && <span className="text-xs text-rose-500">{error}</span>}
+      {error && (
+        <p className="mt-1.5 text-[11px] leading-snug text-rose-500 text-center">{error}</p>
+      )}
     </div>
   );
 }

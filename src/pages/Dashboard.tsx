@@ -2,8 +2,9 @@ import { Link } from "react-router-dom";
 import { useSections, useOverallStats, useStreak, useUpNext, useProgressMap } from "../lib/queries";
 import { db } from "../lib/db";
 import { useLiveQuery } from "dexie-react-hooks";
-import { Card, Ring, ProgressBar } from "../components/ui";
+import { Card, Ring, ProgressBar, PageTitle } from "../components/ui";
 import { StreakHeatmap } from "../components/StreakHeatmap";
+import { IconArrowRight, IconFlame, IconPlay } from "../components/icons";
 import { fmtHours, fmtDate, pct } from "../lib/format";
 import type { Section } from "../lib/types";
 
@@ -31,75 +32,141 @@ export function Dashboard() {
       : null;
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Your courses</h1>
-        <p className="text-ink-faint dark:text-zinc-500 mt-1">
-          Keep the streak alive. One lesson at a time.
-        </p>
-      </div>
+    <div className="space-y-6 sm:space-y-8">
+      <PageTitle
+        eyebrow="Dashboard"
+        title="Your courses"
+        subtitle="Keep the streak alive. One lesson at a time."
+      />
 
-      {/* Overview */}
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Card className="p-5 flex items-center gap-4">
-          <Ring value={overallPct} size={84} color="#6366f1" />
-          <div>
-            <div className="text-sm text-ink-faint dark:text-zinc-500">Overall</div>
-            <div className="text-2xl font-semibold">
-              {overall.completed}
-              <span className="text-ink-faint dark:text-zinc-500 text-lg">/{overall.total}</span>
+      {/* Hero — overall progress */}
+      <Card className="p-5 sm:p-6 relative overflow-hidden">
+        {/* soft accent bloom so the card glows instead of reading flat */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -top-16 -right-10 h-48 w-48 rounded-full opacity-70 blur-2xl"
+          style={{
+            background:
+              "radial-gradient(circle, rgba(99,102,241,0.22), rgba(217,70,239,0.10) 55%, transparent 70%)",
+          }}
+        />
+        <div className="relative flex items-center gap-5">
+          <Ring value={overallPct} size={92} stroke={8} color="#6366f1" />
+          <div className="min-w-0">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-faint dark:text-zinc-500">
+              Overall progress
             </div>
-            <div className="text-xs text-ink-faint dark:text-zinc-500">lessons done</div>
+            <div className="font-display text-[28px] font-bold leading-tight tracking-tight mt-0.5">
+              {overall.completed}
+              <span className="text-ink-faint dark:text-zinc-500 text-xl font-semibold">
+                /{overall.total}
+              </span>
+            </div>
+            <div className="text-sm text-ink-soft dark:text-zinc-400">
+              lessons complete · {fmtHours(overall.remainingSec)} left
+            </div>
           </div>
-        </Card>
+        </div>
+      </Card>
 
-        <Card className="p-5">
-          <div className="text-sm text-ink-faint dark:text-zinc-500">Remaining</div>
-          <div className="text-2xl font-semibold mt-1">{fmtHours(overall.remainingSec)}</div>
-          <div className="text-xs text-ink-faint dark:text-zinc-500 mt-1">
-            {projectedDate ? (
-              <>at {pace.toFixed(1)}/day → finish <span className="font-medium">{projectedDate}</span></>
-            ) : (
-              "complete a lesson to project a finish date"
-            )}
-          </div>
-        </Card>
+      {/* Stats — equal-height cards */}
+      <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
+        <StatCard label="Projected finish">
+          {projectedDate ? (
+            <>
+              <div className="font-display text-2xl font-bold tracking-tight">{projectedDate}</div>
+              <div className="text-xs text-ink-faint dark:text-zinc-500 mt-1">
+                at {pace.toFixed(1)} lessons/day
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="font-display text-2xl font-bold tracking-tight text-ink-faint dark:text-zinc-500">
+                —
+              </div>
+              <div className="text-xs text-ink-faint dark:text-zinc-500 mt-1">
+                complete a lesson to project a date
+              </div>
+            </>
+          )}
+        </StatCard>
 
-        <Card className="p-5">
-          <div className="flex items-baseline justify-between">
-            <div className="text-sm text-ink-faint dark:text-zinc-500">Streak</div>
-            <div className="text-xs text-ink-faint dark:text-zinc-500">best {streak.best}d</div>
+        <StatCard label="Streak" trailing={`best ${streak.best}d`}>
+          <div className="flex items-center gap-1.5 font-display text-2xl font-bold tracking-tight">
+            <IconFlame
+              size={22}
+              className={streak.current > 0 ? "text-orange-500" : "text-ink-faint dark:text-zinc-600"}
+            />
+            {streak.current}
+            <span className="text-base font-semibold text-ink-faint dark:text-zinc-500">days</span>
           </div>
-          <div className="text-2xl font-semibold mt-1">🔥 {streak.current} days</div>
           <div className="mt-3">
             <StreakHeatmap days={streak.days} />
           </div>
-        </Card>
+        </StatCard>
       </div>
 
       {/* Up next */}
       {upNext && (
-        <Card className="p-5 flex items-center justify-between">
-          <div className="min-w-0">
-            <div className="text-xs uppercase tracking-wide text-ink-faint dark:text-zinc-500">Up next</div>
-            <div className="font-medium truncate">{upNext.title}</div>
+        <Card className="p-4 sm:p-5">
+          <div className="flex items-center gap-3">
+            <span className="hidden sm:grid place-items-center h-10 w-10 shrink-0 rounded-xl bg-accent-500/10 dark:bg-accent-400/15 text-accent-500 dark:text-accent-300">
+              <IconPlay size={18} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-accent-500 dark:text-accent-300">
+                Up next
+              </div>
+              <div className="font-medium truncate mt-0.5">{upNext.title}</div>
+            </div>
+            <Link
+              to={`/lesson/${upNext.id}`}
+              className="shrink-0 inline-flex items-center gap-1.5 h-10 px-4 rounded-xl bg-accent-grad text-white text-sm font-medium shadow-glow hover:shadow-glow-lg active:scale-[0.97] transition"
+            >
+              Resume
+              <IconArrowRight size={16} />
+            </Link>
           </div>
-          <Link
-            to={`/lesson/${upNext.id}`}
-            className="shrink-0 ml-4 inline-flex items-center gap-2 rounded-xl bg-ink text-white dark:bg-white dark:text-black px-4 py-2 font-medium hover:opacity-90 transition"
-          >
-            Resume →
-          </Link>
         </Card>
       )}
 
       {/* Sections */}
-      <div className="grid gap-4 sm:grid-cols-2">
-        {sections.map((s) => (
-          <SectionCard key={s.id} section={s} />
-        ))}
+      <div className="space-y-3">
+        <h2 className="font-display font-semibold text-[15px] text-ink-soft dark:text-zinc-400">
+          Sections
+        </h2>
+        <div className="grid gap-3 sm:gap-4 sm:grid-cols-2">
+          {sections.map((s) => (
+            <SectionCard key={s.id} section={s} />
+          ))}
+        </div>
       </div>
     </div>
+  );
+}
+
+/** Uniform stat tile so every box in the row lines up. */
+function StatCard({
+  label,
+  trailing,
+  children,
+}: {
+  label: string;
+  trailing?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Card className="p-4 sm:p-5 h-full flex flex-col">
+      <div className="flex items-baseline justify-between gap-2">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-faint dark:text-zinc-500">
+          {label}
+        </div>
+        {trailing && (
+          <div className="text-[11px] text-ink-faint dark:text-zinc-500 shrink-0">{trailing}</div>
+        )}
+      </div>
+      <div className="mt-1.5">{children}</div>
+    </Card>
   );
 }
 
@@ -120,19 +187,20 @@ function SectionCard({ section }: { section: Section }) {
   const p = pct(done, total);
 
   return (
-    <Link to={`/section/${section.id}`}>
-      <Card className="p-5 h-full">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="h-3 w-3 rounded-full" style={{ backgroundColor: section.color }} />
-            <h3 className="font-semibold text-lg">{section.name}</h3>
+    <Link to={`/section/${section.id}`} className="block">
+      <Card className="p-4 sm:p-5 h-full" interactive>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <span
+              className="h-2.5 w-2.5 shrink-0 rounded-full"
+              style={{ backgroundColor: section.color, boxShadow: `0 0 10px ${section.color}99` }}
+            />
+            <h3 className="font-display font-semibold text-[16px] truncate">{section.name}</h3>
           </div>
-          <span className="text-sm text-ink-faint dark:text-zinc-500">{p}%</span>
+          <span className="text-sm font-semibold tabular-nums shrink-0">{p}%</span>
         </div>
-        <div className="mt-3">
-          <ProgressBar value={p} color={section.color} />
-        </div>
-        <div className="mt-3 text-sm text-ink-faint dark:text-zinc-500">
+        <ProgressBar value={p} color={section.color} className="mt-3.5" />
+        <div className="mt-2.5 text-[13px] text-ink-faint dark:text-zinc-500">
           {done}/{total} lessons · {data.courses} course{data.courses !== 1 ? "s" : ""}
         </div>
       </Card>

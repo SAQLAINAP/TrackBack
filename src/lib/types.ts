@@ -13,15 +13,18 @@ export interface FlairMeta {
   label: string;
   emoji: string;
   color: string; // tailwind text/bg base color name
+  /** Literal hex, used for the uniform dot markers (emoji width varies per glyph
+   *  and some Android WebViews render them as tofu, so the UI uses dots). */
+  hex: string;
 }
 
 export const FLAIRS: FlairMeta[] = [
-  { kind: "revision_needed", label: "Revision needed", emoji: "🔁", color: "amber" },
-  { kind: "coding_needed", label: "Coding needed", emoji: "💻", color: "sky" },
-  { kind: "not_understood", label: "Not understood", emoji: "❓", color: "rose" },
-  { kind: "skipped", label: "Skipped", emoji: "⏭️", color: "zinc" },
-  { kind: "important", label: "Important", emoji: "⭐", color: "violet" },
-  { kind: "done_well", label: "Nailed it", emoji: "✅", color: "emerald" },
+  { kind: "revision_needed", label: "Revision needed", emoji: "🔁", color: "amber", hex: "#f59e0b" },
+  { kind: "coding_needed", label: "Coding needed", emoji: "💻", color: "sky", hex: "#0ea5e9" },
+  { kind: "not_understood", label: "Not understood", emoji: "❓", color: "rose", hex: "#f43f5e" },
+  { kind: "skipped", label: "Skipped", emoji: "⏭️", color: "zinc", hex: "#a1a1aa" },
+  { kind: "important", label: "Important", emoji: "⭐", color: "violet", hex: "#8b5cf6" },
+  { kind: "done_well", label: "Nailed it", emoji: "✅", color: "emerald", hex: "#10b981" },
 ];
 
 export const FLAIR_MAP: Record<FlairKind, FlairMeta> = Object.fromEntries(

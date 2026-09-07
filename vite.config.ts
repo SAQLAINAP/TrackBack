@@ -9,11 +9,11 @@ export default defineConfig({
       registerType: "autoUpdate",
       includeAssets: ["favicon.svg"],
       manifest: {
-        name: "Course Tracker",
-        short_name: "Courses",
+        name: "TrackBack",
+        short_name: "TrackBack",
         description: "Track your courses, notes, and progress — offline-first.",
-        theme_color: "#18181b",
-        background_color: "#fafaf9",
+        theme_color: "#0a0a0f",
+        background_color: "#0a0a0f",
         display: "standalone",
         start_url: "/",
         icons: [

@@ -1,14 +1,18 @@
-import { useRef, useState } from "react";
-import { Card, Button } from "../components/ui";
+import { useRef, useState, type ReactNode } from "react";
+import { Card, Button, Segmented, PageTitle } from "../components/ui";
 import { SyncBadge } from "../components/SyncBadge";
+import { IconMoon, IconSun } from "../components/icons";
 import { useAuth, signIn, signUp, signOut } from "../lib/auth";
 import { exportBackup, importBackup } from "../lib/backup";
 import { useTheme } from "../lib/theme";
 import { runSync, resetSyncCursor } from "../lib/sync";
 
+const FIELD =
+  "w-full h-11 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] border border-transparent px-3.5 text-sm outline-none transition focus:border-accent-400/50 focus:bg-white dark:focus:bg-white/[0.09] placeholder:text-ink-faint dark:placeholder:text-zinc-500";
+
 export function SettingsPage() {
   const { user, configured } = useAuth();
-  const { theme, toggle } = useTheme();
+  const { theme, setTheme } = useTheme();
   const fileRef = useRef<HTMLInputElement>(null);
   const [msg, setMsg] = useState<string | null>(null);
 
@@ -24,37 +28,45 @@ export function SettingsPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-2xl">
-      <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
+    <div className="space-y-5 sm:space-y-6 max-w-2xl">
+      <PageTitle title="Settings" subtitle="Theme, sync and backups." />
+
+      {/* Appearance */}
+      <Section title="Appearance">
+        <Segmented<"light" | "dark">
+          value={theme}
+          onChange={setTheme}
+          options={[
+            { value: "light", label: (<><IconSun size={15} />Light</>) },
+            { value: "dark", label: (<><IconMoon size={15} />Dark</>) },
+          ]}
+        />
+      </Section>
 
       {/* Account / Sync */}
-      <Card className="p-5 space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="font-semibold">Sync & account</h2>
-          <SyncBadge />
-        </div>
-
+      <Section title="Sync & account" trailing={<SyncBadge />}>
         {!configured ? (
-          <div className="text-sm text-ink-faint dark:text-zinc-500 space-y-2">
-            <p>
-              Cross-device sync is not configured yet — the app is running fully local. To enable it, create a
-              free Supabase project and add these to a <code>.env.local</code> file, then restart:
+          <div className="space-y-2.5">
+            <p className="text-[13px] leading-relaxed text-ink-soft dark:text-zinc-400">
+              Cross-device sync isn’t configured — the app runs fully local. To enable it, create a
+              free Supabase project and add these to <code className="font-mono text-[12px]">.env.local</code>,
+              then rebuild:
             </p>
-            <pre className="bg-zinc-900 text-zinc-100 rounded-xl p-3 text-xs overflow-x-auto">
+            <pre className="bg-surface dark:bg-black/40 text-zinc-100 rounded-xl p-3 text-[11px] leading-relaxed overflow-x-auto border border-white/[0.06]">
 {`VITE_SUPABASE_URL=your-project-url
 VITE_SUPABASE_ANON_KEY=your-anon-key`}
             </pre>
           </div>
         ) : user ? (
-          <div className="flex items-center justify-between">
-            <div className="text-sm">
-              Signed in as <span className="font-medium">{user.email}</span>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => runSync()}>
+          <div className="space-y-3">
+            <p className="text-[13px] text-ink-soft dark:text-zinc-400 truncate">
+              Signed in as <span className="font-medium text-ink dark:text-white">{user.email}</span>
+            </p>
+            <div className="grid grid-cols-2 gap-2.5">
+              <Button variant="outline" full onClick={() => runSync()}>
                 Sync now
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => signOut()}>
+              <Button variant="ghost" full onClick={() => signOut()}>
                 Sign out
               </Button>
             </div>
@@ -62,48 +74,39 @@ VITE_SUPABASE_ANON_KEY=your-anon-key`}
         ) : (
           <AuthForm onMsg={setMsg} />
         )}
-      </Card>
+      </Section>
 
       {/* Backup */}
-      <Card className="p-5 space-y-3">
-        <h2 className="font-semibold">Backup</h2>
-        <p className="text-sm text-ink-faint dark:text-zinc-500">
-          Export everything (progress, notes, flairs, images, voice) to a single JSON file, or restore from one.
+      <Section title="Backup">
+        <p className="text-[13px] leading-relaxed text-ink-soft dark:text-zinc-400">
+          Export everything — progress, notes, flairs, images and voice memos — to a single JSON
+          file, or restore from one.
         </p>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => exportBackup()}>
-            ⬇ Export backup
+        <input
+          ref={fileRef}
+          type="file"
+          accept="application/json"
+          className="hidden"
+          onChange={(e) => onImport(e.target.files?.[0] ?? null)}
+        />
+        <div className="grid grid-cols-2 gap-2.5">
+          <Button variant="outline" full onClick={() => exportBackup()}>
+            Export
           </Button>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="application/json"
-            className="hidden"
-            onChange={(e) => onImport(e.target.files?.[0] ?? null)}
-          />
-          <Button variant="outline" size="sm" onClick={() => fileRef.current?.click()}>
-            ⬆ Import backup
+          <Button variant="outline" full onClick={() => fileRef.current?.click()}>
+            Import
           </Button>
         </div>
-      </Card>
-
-      {/* Appearance */}
-      <Card className="p-5 flex items-center justify-between">
-        <h2 className="font-semibold">Appearance</h2>
-        <Button variant="outline" size="sm" onClick={toggle}>
-          {theme === "dark" ? "☀️ Light mode" : "🌙 Dark mode"}
-        </Button>
-      </Card>
+      </Section>
 
       {configured && user && (
-        <Card className="p-5 flex items-center justify-between">
-          <div>
-            <h2 className="font-semibold">Force full re-sync</h2>
-            <p className="text-sm text-ink-faint dark:text-zinc-500">Re-pull all server data from scratch.</p>
-          </div>
+        <Section title="Force full re-sync">
+          <p className="text-[13px] leading-relaxed text-ink-soft dark:text-zinc-400">
+            Re-pull all server data from scratch.
+          </p>
           <Button
             variant="ghost"
-            size="sm"
+            full
             onClick={async () => {
               await resetSyncCursor();
               await runSync();
@@ -112,11 +115,34 @@ VITE_SUPABASE_ANON_KEY=your-anon-key`}
           >
             Re-sync
           </Button>
-        </Card>
+        </Section>
       )}
 
-      {msg && <div className="text-sm text-ink-faint dark:text-zinc-500">{msg}</div>}
+      {msg && (
+        <p className="text-[13px] text-ink-soft dark:text-zinc-400 text-center">{msg}</p>
+      )}
     </div>
+  );
+}
+
+/** Uniform settings block so every card shares the same padding + header rhythm. */
+function Section({
+  title,
+  trailing,
+  children,
+}: {
+  title: string;
+  trailing?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <Card className="p-4 sm:p-5 space-y-3">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="font-display font-semibold text-[15px]">{title}</h2>
+        {trailing}
+      </div>
+      {children}
+    </Card>
   );
 }
 
@@ -143,36 +169,36 @@ function AuthForm({ onMsg }: { onMsg: (m: string) => void }) {
   };
 
   return (
-    <form onSubmit={submit} className="space-y-3">
+    <form onSubmit={submit} className="space-y-2.5">
       <input
         type="email"
         required
+        autoComplete="email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder="Email"
-        className="w-full rounded-xl bg-zinc-100 dark:bg-zinc-900 px-3.5 py-2 text-sm outline-none border border-transparent focus:border-zinc-300 dark:focus:border-zinc-700"
+        className={FIELD}
       />
       <input
         type="password"
         required
         minLength={6}
+        autoComplete={mode === "in" ? "current-password" : "new-password"}
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         placeholder="Password"
-        className="w-full rounded-xl bg-zinc-100 dark:bg-zinc-900 px-3.5 py-2 text-sm outline-none border border-transparent focus:border-zinc-300 dark:focus:border-zinc-700"
+        className={FIELD}
       />
-      <div className="flex items-center gap-3">
-        <Button type="submit" disabled={busy}>
-          {mode === "in" ? "Sign in" : "Create account"}
-        </Button>
-        <button
-          type="button"
-          onClick={() => setMode((m) => (m === "in" ? "up" : "in"))}
-          className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
-        >
-          {mode === "in" ? "Need an account?" : "Have an account?"}
-        </button>
-      </div>
+      <Button type="submit" disabled={busy} full>
+        {busy ? "Working…" : mode === "in" ? "Sign in" : "Create account"}
+      </Button>
+      <button
+        type="button"
+        onClick={() => setMode((m) => (m === "in" ? "up" : "in"))}
+        className="w-full text-center text-[13px] text-accent-600 dark:text-accent-300 hover:underline py-1"
+      >
+        {mode === "in" ? "Need an account?" : "Have an account?"}
+      </button>
     </form>
   );
 }

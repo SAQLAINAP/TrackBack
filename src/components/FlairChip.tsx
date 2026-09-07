@@ -41,16 +41,24 @@ export function FlairChip({
 }) {
   const meta = FLAIR_MAP[kind];
   const s = STYLES[kind];
-  const sz = size === "sm" ? "text-[11px] px-2 py-0.5" : "text-xs px-2.5 py-1";
+  // Fixed heights keep every chip on the same baseline regardless of glyph.
+  const sz = size === "sm" ? "h-6 text-[11px] px-2 gap-1" : "h-8 text-xs px-3 gap-1.5";
   return (
     <button
       type={onClick ? "button" : undefined}
       onClick={onClick}
-      className={`inline-flex items-center gap-1 rounded-full border font-medium transition ${sz} ${
+      aria-pressed={onClick ? !!active : undefined}
+      className={`inline-flex items-center rounded-full border font-medium leading-none whitespace-nowrap transition ${sz} ${
         active ? s.on : `bg-transparent ${s.off} opacity-70 hover:opacity-100`
-      } ${onClick ? "cursor-pointer" : "cursor-default"}`}
+      } ${onClick ? "cursor-pointer active:scale-[0.96]" : "cursor-default"}`}
     >
-      <span>{meta.emoji}</span>
+      <span
+        className="h-1.5 w-1.5 shrink-0 rounded-full"
+        style={{
+          backgroundColor: meta.hex,
+          boxShadow: active ? `0 0 6px ${meta.hex}` : undefined,
+        }}
+      />
       <span>{meta.label}</span>
     </button>
   );

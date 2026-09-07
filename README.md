@@ -10,7 +10,7 @@ with optional background sync across devices.
 [![Download APK](https://img.shields.io/badge/Download-Android%20APK-3b82f6?style=for-the-badge&logo=android&logoColor=white)](https://github.com/SAQLAINAP/TrackBack/releases/latest)
 [![Build Android APK](https://github.com/SAQLAINAP/TrackBack/actions/workflows/android.yml/badge.svg)](https://github.com/SAQLAINAP/TrackBack/actions/workflows/android.yml)
 
-<img src="docs/images/dashboard.png" alt="TrackBack dashboard" width="820" />
+<img src="docs/images/hero-dark.png" alt="TrackBack dashboard" width="820" />
 
 </div>
 
@@ -46,11 +46,26 @@ browser — it works fully offline and adds an icon to your home screen / dock.
 
 ## 🖼️ Screenshots
 
-|  |  |
-|---|---|
-| **Dashboard** — rings, streak, up-next<br><img src="docs/images/dashboard.png" width="420"/> | **Dark mode**<br><img src="docs/images/dashboard-dark.png" width="420"/> |
-| **Course** — lessons, filters, search<br><img src="docs/images/course.png" width="420"/> | **Lesson** — embedded player + completion<br><img src="docs/images/lesson.png" width="420"/> |
-| **Revision queue** — flag-filtered<br><img src="docs/images/revision.png" width="420"/> | **Section** — course progress<br><img src="docs/images/section.png" width="420"/> |
+Captured at a phone viewport with the Android edge-to-edge insets applied — the header clears the
+status bar and the bottom nav sits above the gesture bar.
+
+<div align="center">
+
+| Dashboard | Course | Lesson |
+|:--:|:--:|:--:|
+| <img src="docs/images/dashboard.png" width="250"/> | <img src="docs/images/course.png" width="250"/> | <img src="docs/images/lesson.png" width="250"/> |
+| Progress ring, streak heatmap, up-next | Lesson list with status + flair filters | Embedded player, notes, attachments |
+
+| Section | Revision queue | Settings |
+|:--:|:--:|:--:|
+| <img src="docs/images/section.png" width="250"/> | <img src="docs/images/revision.png" width="250"/> | <img src="docs/images/settings.png" width="250"/> |
+| Per-course progress bars | Everything you flagged, filterable | Theme, sync and backups |
+
+**Light theme**
+
+<img src="docs/images/hero-light.png" width="760"/>
+
+</div>
 
 ---
 
