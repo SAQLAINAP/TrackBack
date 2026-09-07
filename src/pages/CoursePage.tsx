@@ -14,8 +14,7 @@ import {
 import { fmtDuration, fmtDate, pct } from "../lib/format";
 import { exportCourseNotes } from "../lib/backup";
 import { toggleComplete } from "../lib/repo";
-import { FLAIRS, type FlairKind, type LessonStatus } from "../lib/types";
-import { FLAIR_MAP } from "../lib/types";
+import { FLAIRS, FLAIR_MAP, type FlairKind, type LessonStatus } from "../lib/types";
 
 type StatusFilter = "all" | LessonStatus;
 
@@ -40,6 +39,10 @@ export function CoursePage() {
       const rows = (await db.flairs.where("lessonId").anyOf(ids).toArray()).filter((f) => !f.deleted);
       const m = new Map<string, FlairKind[]>();
       for (const r of rows) {
+        // Drop kinds this build doesn't know about. Sync from a newer client or a
+        // hand-edited backup import can both deliver one, and an unchecked
+        // FLAIR_MAP[kind] lookup downstream would blank the whole course page.
+        if (!FLAIR_MAP[r.kind]) continue;
         const a = m.get(r.lessonId) ?? [];
         a.push(r.kind);
         m.set(r.lessonId, a);

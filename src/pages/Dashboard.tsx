@@ -139,7 +139,9 @@ export function Dashboard() {
               className={streak.current > 0 ? "text-orange-500" : "text-ink-faint dark:text-zinc-600"}
             />
             {streak.current}
-            <span className="text-base font-semibold text-ink-faint dark:text-zinc-500">days</span>
+            <span className="text-base font-semibold text-ink-faint dark:text-zinc-500">
+              {streak.current === 1 ? "day" : "days"}
+            </span>
           </div>
           <div className="mt-3">
             <StreakHeatmap days={streak.days} />
