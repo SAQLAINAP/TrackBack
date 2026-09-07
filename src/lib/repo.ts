@@ -1,11 +1,78 @@
+import type { Table } from "dexie";
 import { db, getMeta, setMeta } from "./db";
 import { uid, now } from "./id";
 import { seedSections, seedCourses, seedLessons, SEED_VERSION } from "../data/seed";
 import type { FlairKind, LessonStatus, MediaItem } from "./types";
 import { requestSync } from "./sync";
+import { isSupabaseConfigured } from "./supabase";
+
+interface SyncedRow {
+  id: string;
+  lessonId: string;
+  updatedAt: number;
+  deleted: number;
+  dirty: number;
+}
 
 // ---------- Seeding ----------
+
+/**
+ * Nested playlists the original scraper mistook for videos: their videoId is a
+ * playlist id, so the embed never loads, and they inflated the System Design
+ * denominator so it could never reach 100%.
+ */
+const BOGUS_LESSON_IDS = [
+  "l_PLMCXHnjXnTnucEu8lYMatA23OOi_De3Zp",
+  "l_PLMCXHnjXnTnszR6YSo1tQK2BMr15cC9Zh",
+  "l_PLMCXHnjXnTnto1pZVvH7rbZ9W5neZ7Yhc",
+];
+
+async function tombstoneByLesson<T extends SyncedRow>(table: Table<T, string>): Promise<number> {
+  const rows = await table.where("lessonId").anyOf(BOGUS_LESSON_IDS).toArray();
+  let count = 0;
+  for (const row of rows) {
+    if (row.deleted) continue;
+    await table.put({ ...row, deleted: 1, updatedAt: now(), dirty: 1 });
+    count++;
+  }
+  return count;
+}
+
+/**
+ * Dropping them from the seed is not enough: seedIfNeeded only bulkPuts, so on
+ * an existing install the rows survive in IndexedDB.
+ *
+ * User rows are tombstoned rather than hard-deleted so the deletion pushes to
+ * Supabase — a hard delete would leave the remote rows live and a later pull
+ * (or a fresh install) would resurrect them.
+ */
+async function purgeBogusLessons(): Promise<void> {
+  if (await getMeta<boolean>("purgedPlaylistLessons")) return;
+
+  let tombstoned = 0;
+  await db.transaction(
+    "rw",
+    db.lessons,
+    db.progress,
+    db.notes,
+    db.flairs,
+    db.media,
+    async () => {
+      await db.lessons.bulkDelete(BOGUS_LESSON_IDS);
+      tombstoned += await tombstoneByLesson(db.progress);
+      tombstoned += await tombstoneByLesson(db.notes);
+      tombstoned += await tombstoneByLesson(db.flairs);
+      tombstoned += await tombstoneByLesson(db.media);
+    },
+  );
+
+  await setMeta("purgedPlaylistLessons", true);
+  if (tombstoned) requestSync();
+}
+
 export async function seedIfNeeded(): Promise<void> {
+  await purgeBogusLessons();
+
   const version = await getMeta<number>("seedVersion");
   if (version === SEED_VERSION) return;
 
@@ -155,4 +222,57 @@ export async function toggleFlair(lessonId: string, kind: FlairKind): Promise<vo
     });
   }
   requestSync();
+}
+
+// ---------- Destructive reset ----------
+
+async function tombstoneAll<T extends SyncedRow>(table: Table<T, string>): Promise<number> {
+  const rows = await table.toArray();
+  let count = 0;
+  for (const row of rows) {
+    if (row.deleted) continue;
+    await table.put({ ...row, deleted: 1, updatedAt: now(), dirty: 1 });
+    count++;
+  }
+  return count;
+}
+
+/**
+ * Wipe all study history — progress, notes, flairs and media. The bundled
+ * course catalogue and the user's settings are left alone.
+ *
+ * When sync is configured the rows are tombstoned rather than dropped. A hard
+ * local delete would leave the Supabase copies live, so the next pull — or a
+ * reinstall, or "Force full re-sync" — would quietly resurrect everything the
+ * user just asked to destroy. Media keeps its storagePath so the push can also
+ * delete the remote object, but the blob is dropped immediately since that is
+ * the only bulky thing here.
+ *
+ * With no sync configured there is nothing to propagate to, so the tables are
+ * emptied outright and the space is reclaimed straight away.
+ */
+export async function resetAllUserData(): Promise<{ cleared: number }> {
+  let cleared = 0;
+
+  await db.transaction("rw", db.progress, db.notes, db.flairs, db.media, async () => {
+    if (!isSupabaseConfigured) {
+      for (const table of [db.progress, db.notes, db.flairs, db.media]) {
+        cleared += await table.count();
+        await table.clear();
+      }
+      return;
+    }
+
+    cleared += await tombstoneAll(db.progress);
+    cleared += await tombstoneAll(db.notes);
+    cleared += await tombstoneAll(db.flairs);
+    for (const item of await db.media.toArray()) {
+      if (item.deleted) continue;
+      await db.media.put({ ...item, blob: undefined, deleted: 1, updatedAt: now(), dirty: 1 });
+      cleared++;
+    }
+  });
+
+  if (isSupabaseConfigured) requestSync();
+  return { cleared };
 }

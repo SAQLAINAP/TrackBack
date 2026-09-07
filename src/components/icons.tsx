@@ -152,6 +152,13 @@ export const IconTrash = (p: P) => (
   </Svg>
 );
 
+export const IconAlert = (p: P) => (
+  <Svg {...p}>
+    <path d="M10.7 3.9 2.5 18a1.5 1.5 0 0 0 1.3 2.3h16.4a1.5 1.5 0 0 0 1.3-2.3L13.3 3.9a1.5 1.5 0 0 0-2.6 0Z" />
+    <path d="M12 9v4.5M12 17h.01" />
+  </Svg>
+);
+
 export const IconNote = (p: P) => (
   <Svg {...p}>
     <path d="M6 3h12v18H6z" />

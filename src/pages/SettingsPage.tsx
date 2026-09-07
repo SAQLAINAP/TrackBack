@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Card, Button, Segmented, PageTitle, Toggle } from "../components/ui";
 import { SyncBadge } from "../components/SyncBadge";
-import { IconMoon, IconSun } from "../components/icons";
+import { IconAlert, IconMoon, IconSun } from "../components/icons";
 import { useAuth, signIn, signUp, signOut } from "../lib/auth";
 import { exportBackup, importBackup } from "../lib/backup";
 import { useTheme } from "../lib/theme";
 import { runSync, resetSyncCursor } from "../lib/sync";
+import { resetAllUserData } from "../lib/repo";
 import { usePrefs } from "../lib/prefs";
 import { useStreak } from "../lib/queries";
 import { cancelDaily, remindersSupported, scheduleDaily } from "../lib/reminders";
@@ -144,10 +145,127 @@ VITE_SUPABASE_ANON_KEY=your-anon-key`}
         </Section>
       )}
 
+      <DangerSection onMsg={setMsg} />
+
       {msg && (
         <p className="text-[13px] text-ink-soft dark:text-zinc-400 text-center">{msg}</p>
       )}
     </div>
+  );
+}
+
+/** Typed exactly, case and all, before the reset button unlocks. */
+const RESET_PHRASE = "RESET EVERYTHING";
+
+/**
+ * Irreversible, so it is gated three ways: the input is hidden until you ask
+ * for it, the phrase must match exactly, and a backup is offered inline right
+ * where you are about to lose the data.
+ */
+function DangerSection({ onMsg }: { onMsg: (m: string) => void }) {
+  const [armed, setArmed] = useState(false);
+  const [phrase, setPhrase] = useState("");
+  const [busy, setBusy] = useState(false);
+  // Trimmed but case-sensitive: Android keyboards readily append a trailing
+  // space, and rejecting that guards nothing. Having to type the capitals is
+  // the part that actually makes this deliberate.
+  const matches = phrase.trim() === RESET_PHRASE;
+
+  const disarm = () => {
+    setArmed(false);
+    setPhrase("");
+  };
+
+  const onReset = async () => {
+    if (!matches || busy) return;
+    setBusy(true);
+    try {
+      const { cleared } = await resetAllUserData();
+      disarm();
+      onMsg(
+        cleared === 0
+          ? "Nothing to reset — there was no saved progress."
+          : `Reset complete. Cleared ${cleared} record${cleared === 1 ? "" : "s"}.`,
+      );
+    } catch (e) {
+      onMsg(`Reset failed: ${e instanceof Error ? e.message : e}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Card
+      // `!` is load-bearing: Card sets `dark:border-white/[0.07]`, and a dark:
+      // variant outranks an unprefixed border-color utility, so in dark mode
+      // the rose edge would silently never render.
+      className="p-4 sm:p-5 space-y-3 !border-rose-500/25"
+    >
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="font-display font-semibold text-[15px] text-rose-600 dark:text-rose-400">
+          Danger zone
+        </h2>
+        <IconAlert size={16} className="text-rose-500 shrink-0" />
+      </div>
+
+      <p className="text-[13px] leading-relaxed text-ink-soft dark:text-zinc-400">
+        Reset everything clears all completions, resume points, notes, flairs, images and voice
+        memos. Your courses stay — as does your theme, daily goal and reminder — but every trace of
+        what you&rsquo;ve studied is gone. This cannot be undone.
+      </p>
+
+      {!armed ? (
+        <Button variant="outline" full onClick={() => setArmed(true)}>
+          Reset everything…
+        </Button>
+      ) : (
+        <div className="space-y-3">
+          <div className="rounded-xl px-3 py-2.5 bg-rose-500/[0.08] border border-rose-500/20 space-y-2.5">
+            <p className="text-[13px] leading-relaxed text-rose-700 dark:text-rose-300">
+              Export a backup first — it is the only way back.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                await exportBackup();
+                onMsg("Backup exported.");
+              }}
+            >
+              Export backup
+            </Button>
+          </div>
+
+          <label className="block space-y-1.5">
+            <span className="block text-[13px] text-ink-soft dark:text-zinc-400">
+              Type <span className="font-mono font-semibold text-ink dark:text-white">{RESET_PHRASE}</span> to confirm
+            </span>
+            <input
+              autoFocus
+              value={phrase}
+              onChange={(e) => setPhrase(e.target.value)}
+              // A stray Enter shouldn't be able to trigger this.
+              onKeyDown={(e) => e.key === "Enter" && e.preventDefault()}
+              placeholder={RESET_PHRASE}
+              autoCapitalize="characters"
+              autoCorrect="off"
+              spellCheck={false}
+              aria-label={`Type ${RESET_PHRASE} to confirm`}
+              className={`${FIELD} font-mono tracking-wide`}
+            />
+          </label>
+
+          <div className="grid grid-cols-2 gap-2.5">
+            <Button variant="ghost" full onClick={disarm} disabled={busy}>
+              Cancel
+            </Button>
+            <Button variant="danger" full disabled={!matches || busy} onClick={() => void onReset()}>
+              {busy ? "Resetting…" : "Reset everything"}
+            </Button>
+          </div>
+        </div>
+      )}
+    </Card>
   );
 }
 

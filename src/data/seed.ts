@@ -363,9 +363,6 @@ export const seedLessons: SeedLesson[] = [
   { id:"l_07BVxmVFDGY", courseId:"course_system_design", videoId:"07BVxmVFDGY", title:"System Design Interview: TikTok architecture with @sudoCODE", durationSec:2735, order:23 },
   { id:"l_CtmBGH8MkX4", courseId:"course_system_design", videoId:"CtmBGH8MkX4", title:"5 Tips for System Design Interviews", durationSec:499, order:24 },
   { id:"l_CC-AxHIgBSM", courseId:"course_system_design", videoId:"CC-AxHIgBSM", title:"System Design Walkthrough at InterviewReady - Designed for SDE 1 to SDE 3 Interview Preparation", durationSec:295, order:25 },
-  { id:"l_PLMCXHnjXnTnucEu8lYMatA23OOi_De3Zp", courseId:"course_system_design", videoId:"PLMCXHnjXnTnucEu8lYMatA23OOi_De3Zp", title:"Competitive Programming A-Z", durationSec:0, order:26 },
-  { id:"l_PLMCXHnjXnTnszR6YSo1tQK2BMr15cC9Zh", courseId:"course_system_design", videoId:"PLMCXHnjXnTnszR6YSo1tQK2BMr15cC9Zh", title:"CS Fundamentals", durationSec:0, order:27 },
-  { id:"l_PLMCXHnjXnTnto1pZVvH7rbZ9W5neZ7Yhc", courseId:"course_system_design", videoId:"PLMCXHnjXnTnto1pZVvH7rbZ9W5neZ7Yhc", title:"Dynamic Programming", durationSec:0, order:28 },
   { id:"l_7qN3f4lZ2xo", courseId:"course_devops", videoId:"7qN3f4lZ2xo", title:"DAY-0 | AI Assisted DevOps Zero to Hero | Course Syllabus", durationSec:915, order:0 },
   { id:"l_ej3cJBMG_8s", courseId:"course_devops", videoId:"ej3cJBMG_8s", title:"DAY-1 | Fundamentals of AI Assisted DevOps | Demo and Notes Included", durationSec:3008, order:1 },
   { id:"l_jTW4QPE4ARc", courseId:"course_devops", videoId:"jTW4QPE4ARc", title:"DAY-2 |  AI Assisted DevOps | Prompt Engineer Explained In 30 Minutes", durationSec:1612, order:2 },
@@ -465,7 +462,7 @@ export const seedLessons: SeedLesson[] = [
   { id:"l_smOnJtCevoU", courseId:"course_deep_learning", videoId:"smOnJtCevoU", title:"Cross Attention in Transformers | 100 Days Of Deep Learning | CampusX", durationSec:2047, order:81 },
   { id:"l_DI2_hrAulYo", courseId:"course_deep_learning", videoId:"DI2_hrAulYo", title:"Transformer Decoder Architecture | Deep Learning | CampusX", durationSec:2906, order:82 },
   { id:"l_FtsMOzlwxws", courseId:"course_deep_learning", videoId:"FtsMOzlwxws", title:"Transformer Inference | How Inference is done in Transformer? | Deep Learning | CampusX", durationSec:2712, order:83 },
-  { id:"l_yyUHQIec83I", courseId:"course_devops_go", videoId:"yyUHQIec83I", title:"Golang Tutorial for Beginners | Full Go Course", durationSec:0, order:0 },
+  { id:"l_yyUHQIec83I", courseId:"course_devops_go", videoId:"yyUHQIec83I", title:"Golang Tutorial for Beginners | Full Go Course", durationSec:12298, order:0 },
   { id:"l_rliSgjoOFTs", courseId:"course_lld_shrayansh", videoId:"rliSgjoOFTs", title:"Ultimate LLD and HLD Roadmap | System Design RoadMap | LLD & HLD Topics to be covered for Interview", durationSec:664, order:0 },
   { id:"l_mQM3V8E13yc", courseId:"course_lld_shrayansh", videoId:"mQM3V8E13yc", title:"What is LLD (Low Level Design)", durationSec:1038, order:1 },
   { id:"l_XI7zep97c-Y", courseId:"course_lld_shrayansh", videoId:"XI7zep97c-Y", title:"1. SOLID Principles with Easy Examples (Hindi) | OOPs SOLID Principles - Low Level Design", durationSec:1143, order:2 },
@@ -722,4 +719,4 @@ export const seedLessons: SeedLesson[] = [
   { id:"l_XvXK_vZ0BNw", courseId:"course_dist_mit6824", videoId:"XvXK_vZ0BNw", title:"Lecture 20: Blockstack", durationSec:4741, order:19 }
 ];
 
-export const SEED_VERSION = 2;
+export const SEED_VERSION = 3;
