@@ -92,18 +92,24 @@ a,
   user-select: none;
 }
 
+/*
+ * No visible scrollbars anywhere — the app is phone-first and a 10px gutter
+ * pinned to the right edge reads as chrome bolted onto a native-feeling UI.
+ * Scrolling itself is untouched; only the indicator goes away.
+ *
+ * `scrollbar-width` has to land on every scroll container, not just <html>, so
+ * it goes on `*` — Firefox has no ::-webkit-scrollbar equivalent to inherit.
+ */
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  display: none;
 }
-::-webkit-scrollbar-thumb {
-  @apply bg-zinc-300 dark:bg-zinc-700 rounded-full;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
-/* Hide scrollbar for horizontal chip rows */
+/* Kept for the horizontal chip rows that opt in by name; now a no-op, but the
+   markup reads better for saying so. */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }

@@ -1,1 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="#18181b"/><path d="M16 6l10 10-10 10L6 16z" fill="#818cf8"/></svg>
+<!--
+  TrackBack mark: white check on the accent gradient, matching IconMark in the
+  app header, the PWA icons in public/ and the Android adaptive icon. Geometry
+  is IconMark's 24-unit path scaled to 0.52 of this 32-unit tile — the same
+  ratio scripts/make-icons.mjs uses — so every surface reads identically.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#6366f1"/>
+      <stop offset=".5" stop-color="#8b5cf6"/>
+      <stop offset="1" stop-color="#d946ef"/>
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="7" fill="url(#g)"/>
+  <path d="M10.45 17.04 13.92 20.51 21.55 12.19" fill="none" stroke="#fff"
+        stroke-width="1.73" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

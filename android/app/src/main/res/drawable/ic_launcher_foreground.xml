@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Adaptive-icon foreground: the TrackBack check, identical geometry to
+    `IconMark` in src/components/icons.tsx ("M4 13.5 9 18.5 20 6.5", stroke 2.5
+    in a 24-unit viewBox).
+
+    Sizing: the launcher only ever shows the middle 72 of these 108 units, so to
+    read at the same weight as the legacy mipmap PNGs — where the check spans
+    0.52 of the tile — the 24-unit box maps to 0.52 * 72 = 37.44 units, i.e.
+    scale 1.56 offset by (108 - 37.44) / 2 = 35.28. That keeps the whole glyph
+    inside the 66-unit safe zone, so no mask shape can clip it.
+
+    Coordinates are pre-multiplied rather than wrapped in a <group> transform:
+    one less indirection to get wrong, and the stroke width scales explicitly
+    (2.5 * 1.56 = 3.9) instead of implicitly.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:pathData="M41.52,56.34 L49.32,64.14 L66.48,45.42"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="3.9"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+</vector>
