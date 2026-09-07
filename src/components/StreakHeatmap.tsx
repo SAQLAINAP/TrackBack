@@ -1,7 +1,13 @@
 import { dayKey } from "../lib/format";
 
 // GitHub-style contribution heatmap for the last ~17 weeks.
-export function StreakHeatmap({ days }: { days: Record<string, number> }) {
+export function StreakHeatmap({
+  days,
+  unit = "completed",
+}: {
+  days: Record<string, number>;
+  unit?: string;
+}) {
   const weeks = 17;
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -41,7 +47,7 @@ export function StreakHeatmap({ days }: { days: Record<string, number> }) {
           {col.map((cell) => (
             <div
               key={cell.key}
-              title={cell.future ? "" : `${cell.key}: ${cell.count} completed`}
+              title={cell.future ? "" : `${cell.key}: ${cell.count} ${unit}`}
               className={`h-3 w-3 rounded-[3px] ${cell.future ? "opacity-0" : level(cell.count)}`}
             />
           ))}

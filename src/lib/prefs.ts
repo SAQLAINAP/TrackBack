@@ -13,6 +13,8 @@ export interface Prefs {
   /** 24h "HH:MM" local time. */
   reminderTime: string;
   lastBackupAt: number | null;
+  /** Public LeetCode handle whose solved counts the LeetCode tab pulls. */
+  leetcodeUsername: string;
 }
 
 const KEY = "trackback.prefs";
@@ -22,6 +24,7 @@ const DEFAULTS: Prefs = {
   reminderEnabled: false,
   reminderTime: "20:00",
   lastBackupAt: null,
+  leetcodeUsername: "",
 };
 
 function load(): Prefs {
@@ -55,6 +58,7 @@ export const usePrefs = create<PrefsState>((set, get) => ({
       reminderEnabled: next.reminderEnabled,
       reminderTime: next.reminderTime,
       lastBackupAt: next.lastBackupAt,
+      leetcodeUsername: next.leetcodeUsername,
     });
     set(patch);
   },

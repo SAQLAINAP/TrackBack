@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "../lib/theme";
 import { useBackButton } from "../lib/useBackButton";
 import { SyncBadge } from "./SyncBadge";
-import { IconFlag, IconHome, IconMark, IconMoon, IconSearch, IconSettings, IconSun } from "./icons";
+import { IconCode, IconFlag, IconHome, IconMark, IconMoon, IconSearch, IconSettings, IconSun } from "./icons";
 
 export function Layout({ children }: { children: ReactNode }) {
   const { theme, toggle } = useTheme();
@@ -51,6 +51,9 @@ export function Layout({ children }: { children: ReactNode }) {
             <nav className="hidden sm:flex items-center gap-1 text-sm">
               <TopLink to="/revision" active={loc.pathname.startsWith("/revision")}>
                 Revision
+              </TopLink>
+              <TopLink to="/leetcode" active={loc.pathname.startsWith("/leetcode")}>
+                LeetCode
               </TopLink>
               <TopLink to="/settings" active={loc.pathname.startsWith("/settings")}>
                 Settings
@@ -104,6 +107,7 @@ function BottomNav({ pathname }: { pathname: string }) {
     { to: "/", label: "Home", Icon: IconHome, match: (p: string) => p === "/" },
     { to: "/search", label: "Search", Icon: IconSearch, match: (p: string) => p.startsWith("/search") },
     { to: "/revision", label: "Revision", Icon: IconFlag, match: (p: string) => p.startsWith("/revision") },
+    { to: "/leetcode", label: "LeetCode", Icon: IconCode, match: (p: string) => p.startsWith("/leetcode") },
     { to: "/settings", label: "Settings", Icon: IconSettings, match: (p: string) => p.startsWith("/settings") },
   ];
 

@@ -51,6 +51,8 @@ export function SettingsPage() {
 
       <StudySection onMsg={setMsg} />
 
+      <LeetCodeSection />
+
       {/* Appearance */}
       <Section title="Appearance">
         <Segmented<"light" | "dark">
@@ -296,6 +298,26 @@ function BackupAge() {
     <span className="text-[11px] text-ink-faint dark:text-zinc-500 shrink-0">
       {lastBackupAt ? fmtDate(lastBackupAt) : "never exported"}
     </span>
+  );
+}
+
+function LeetCodeSection() {
+  const { leetcodeUsername, set } = usePrefs();
+  return (
+    <Section title="LeetCode">
+      <p className="text-[13px] leading-relaxed text-ink-soft dark:text-zinc-400">
+        Your public LeetCode handle. The LeetCode tab reads its solved counts from this profile.
+      </p>
+      <input
+        value={leetcodeUsername}
+        onChange={(e) => set({ leetcodeUsername: e.target.value.trim() })}
+        placeholder="username"
+        autoCapitalize="none"
+        autoCorrect="off"
+        spellCheck={false}
+        className={FIELD}
+      />
+    </Section>
   );
 }
 

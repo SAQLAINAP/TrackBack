@@ -6,6 +6,7 @@ import { CoursePage } from "./pages/CoursePage";
 import { LessonPage } from "./pages/LessonPage";
 import { RevisionPage } from "./pages/RevisionPage";
 import { SearchPage } from "./pages/SearchPage";
+import { LeetCodePage } from "./pages/LeetCodePage";
 import { SettingsPage } from "./pages/SettingsPage";
 
 export default function App() {
@@ -18,6 +19,7 @@ export default function App() {
         <Route path="/lesson/:lessonId" element={<LessonPage />} />
         <Route path="/revision" element={<RevisionPage />} />
         <Route path="/search" element={<SearchPage />} />
+        <Route path="/leetcode" element={<LeetCodePage />} />
         <Route path="/settings" element={<SettingsPage />} />
       </Routes>
     </Layout>

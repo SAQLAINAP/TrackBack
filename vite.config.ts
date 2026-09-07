@@ -3,6 +3,18 @@ import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
+  // leetcode.com/graphql sends no CORS headers, so the browser cannot POST to it
+  // directly. Native builds use CapacitorHttp instead — see src/lib/leetcode.ts.
+  server: {
+    proxy: {
+      "/leetcode-api": {
+        target: "https://leetcode.com",
+        changeOrigin: true,
+        rewrite: (p) => p.replace(/^\/leetcode-api/, ""),
+        headers: { Referer: "https://leetcode.com/" },
+      },
+    },
+  },
   plugins: [
     react(),
     VitePWA({
