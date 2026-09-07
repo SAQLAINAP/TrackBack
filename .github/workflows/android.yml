@@ -5,6 +5,10 @@ name: Build Android APK
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "LICENSE"
   workflow_dispatch: # lets you trigger a build manually from the Actions tab
 
 jobs:
