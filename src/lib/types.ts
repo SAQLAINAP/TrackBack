@@ -63,6 +63,8 @@ export interface Progress {
   lessonId: string;
   status: LessonStatus;
   completedAt: number | null;
+  /** Last playback position in seconds, so long lessons resume where you left off. */
+  positionSec?: number;
   updatedAt: number;
   deleted: number; // 0 | 1
   dirty: number; // 0 | 1

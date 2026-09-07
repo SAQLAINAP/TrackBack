@@ -139,6 +139,13 @@ export const IconExternal = (p: P) => (
   </Svg>
 );
 
+export const IconDownload = (p: P) => (
+  <Svg {...p}>
+    <path d="M12 4v11M7.5 10.5 12 15l4.5-4.5" />
+    <path d="M5 19h14" />
+  </Svg>
+);
+
 export const IconTrash = (p: P) => (
   <Svg {...p}>
     <path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13" />

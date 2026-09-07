@@ -40,6 +40,8 @@ dist-ssr
 keystore.properties
 key.properties
 signing.properties
+*.pem
+keystore-password.txt
 
 # Generic key / certificate material
 *.pem

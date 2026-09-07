@@ -7,8 +7,8 @@ android {
         applicationId "com.saqlainap.coursetracker"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode 3
+        versionName "0.3.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,10 +16,39 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    // Release signing is driven entirely by environment variables so no key
+    // material ever lands in the repo. CI decodes ANDROID_KEYSTORE_B64 to the
+    // path below; locally the vars are unset and `release` stays unsigned, so
+    // `assembleDebug` keeps working with zero setup.
+    def keystorePath = System.getenv("ANDROID_KEYSTORE_PATH")
+    def keystorePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+    // Named to avoid colliding with SigningConfig's own `keyAlias` property,
+    // which would make the assignment below resolve ambiguously in Groovy.
+    def releaseKeyAlias = System.getenv("ANDROID_KEY_ALIAS") ?: "trackback"
+    def hasReleaseKeystore = keystorePath && keystorePassword && file(keystorePath).exists()
+
+    signingConfigs {
+        if (hasReleaseKeystore) {
+            release {
+                storeFile file(keystorePath)
+                storePassword keystorePassword
+                keyAlias releaseKeyAlias
+                // PKCS12 keeps one password for both the store and the key.
+                keyPassword keystorePassword
+                storeType "PKCS12"
+            }
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            if (hasReleaseKeystore) {
+                signingConfig signingConfigs.release
+            } else {
+                logger.lifecycle("No release keystore configured — 'release' will be unsigned.")
+            }
         }
     }
 }

@@ -1,7 +1,8 @@
 name: Build Android APK
 
-# Builds a debug-signed, installable APK entirely in the cloud.
-# No Android toolchain is needed on your machine.
+# Builds an installable APK entirely in the cloud — no Android toolchain needed
+# locally. Signs with the real release key when the repo secrets are present,
+# and degrades to a debug build if they aren't.
 on:
   push:
     branches: [main]
@@ -47,13 +48,44 @@ jobs:
       - name: Sync Capacitor Android
         run: npx cap sync android
 
-      - name: Build debug APK
+      # A stable release key means every future build is an in-place *upgrade*
+      # rather than a separate app, so upgrading never wipes local data.
+      - name: Decode release keystore
+        id: keystore
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ]; then
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::ANDROID_KEYSTORE_B64 is not set — falling back to a debug APK."
+            exit 0
+          fi
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.p12"
+          echo "signed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Build signed release APK
+        if: steps.keystore.outputs.signed == 'true'
+        working-directory: android
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/release.p12
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: Build debug APK (no keystore configured)
+        if: steps.keystore.outputs.signed != 'true'
         working-directory: android
         run: ./gradlew assembleDebug --no-daemon
+
+      - name: Shred keystore
+        if: always()
+        run: rm -f "$RUNNER_TEMP/release.p12"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: course-tracker-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: trackback-apk
+          path: |
+            android/app/build/outputs/apk/release/app-release.apk
+            android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error

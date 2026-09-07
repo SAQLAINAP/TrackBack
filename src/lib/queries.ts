@@ -161,24 +161,70 @@ export function useStreak(): StreakInfo {
   );
 }
 
-// Up next: first non-completed lesson in course order across sections
-export function useUpNext(): Lesson | undefined {
+export interface UpNext {
+  lesson: Lesson;
+  courseTitle: string;
+  /** Set when we're resuming a partially-watched lesson rather than starting a new one. */
+  resumeSec: number;
+}
+
+/**
+ * What to watch next.
+ *
+ * Prefers the lesson you most recently had open and didn't finish — a strictly
+ * linear walk would keep pointing at DSA #1 for months and would never surface
+ * something you're halfway through. Falls back to the first unwatched lesson in
+ * section → course → lesson order.
+ */
+export function useUpNext(): UpNext | undefined {
   return useLiveQuery(async () => {
-    const courses = await db.courses.orderBy("order").toArray();
-    // group by section order
+    const prog = (await db.progress.toArray()).filter((p) => !p.deleted);
+    const titleFor = async (lesson: Lesson) =>
+      (await db.courses.get(lesson.courseId))?.title ?? "";
+
+    // 1. Most recently touched in-progress lesson.
+    const partial = prog
+      .filter((p) => p.status === "in_progress")
+      .sort((a, b) => b.updatedAt - a.updatedAt);
+    for (const p of partial) {
+      const lesson = await db.lessons.get(p.lessonId);
+      if (lesson) {
+        return { lesson, courseTitle: await titleFor(lesson), resumeSec: p.positionSec ?? 0 };
+      }
+    }
+
+    // 2. Otherwise the next unwatched lesson in curriculum order.
+    const done = new Set(prog.filter((p) => p.status === "completed").map((p) => p.lessonId));
     const sections = await db.sections.orderBy("order").toArray();
-    const prog = await db.progress.toArray();
-    const done = new Set(prog.filter((p) => !p.deleted && p.status === "completed").map((p) => p.lessonId));
+    const courses = await db.courses.orderBy("order").toArray();
     for (const s of sections) {
-      const secCourses = courses.filter((c) => c.sectionId === s.id).sort((a, b) => a.order - b.order);
+      const secCourses = courses
+        .filter((c) => c.sectionId === s.id)
+        .sort((a, b) => a.order - b.order);
       for (const c of secCourses) {
         const lessons = await db.lessons.where("courseId").equals(c.id).sortBy("order");
         const next = lessons.find((l) => !done.has(l.id));
-        if (next) return next;
+        if (next) return { lesson: next, courseTitle: c.title, resumeSec: 0 };
       }
     }
     return undefined;
   }, []);
+}
+
+/** Lessons completed today — drives the daily-goal ring. */
+export function useTodayCount(): number {
+  return useLiveQuery(
+    async () => {
+      const today = dayKey(Date.now());
+      const prog = await db.progress.toArray();
+      return prog.filter(
+        (p) =>
+          !p.deleted && p.status === "completed" && p.completedAt && dayKey(p.completedAt) === today,
+      ).length;
+    },
+    [],
+    0,
+  );
 }
 
 export function useNote(lessonId?: string) {

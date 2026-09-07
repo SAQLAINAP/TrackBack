@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "../lib/theme";
+import { useBackButton } from "../lib/useBackButton";
 import { SyncBadge } from "./SyncBadge";
 import { IconFlag, IconHome, IconMark, IconMoon, IconSearch, IconSettings, IconSun } from "./icons";
 
@@ -9,6 +10,9 @@ export function Layout({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const loc = useLocation();
   const [q, setQ] = useState("");
+
+  // Android back button navigates the router instead of exiting the app.
+  useBackButton();
 
   const submitSearch = (e: React.FormEvent) => {
     e.preventDefault();

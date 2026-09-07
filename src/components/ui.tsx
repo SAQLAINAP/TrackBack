@@ -199,6 +199,48 @@ export function Segmented<T extends string>({
   );
 }
 
+/** Switch for on/off prefs. Renders a real checkbox so labels and a11y come free. */
+export function Toggle({
+  checked,
+  onChange,
+  disabled = false,
+  label,
+  hint,
+}: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  disabled?: boolean;
+  label: ReactNode;
+  hint?: ReactNode;
+}) {
+  return (
+    <label
+      className={`flex items-center justify-between gap-3 ${
+        disabled ? "opacity-50" : "cursor-pointer"
+      }`}
+    >
+      <span className="min-w-0">
+        <span className="block text-sm font-medium">{label}</span>
+        {hint && (
+          <span className="block text-xs text-ink-faint dark:text-zinc-500 mt-0.5 leading-snug">
+            {hint}
+          </span>
+        )}
+      </span>
+      <input
+        type="checkbox"
+        className="peer sr-only"
+        checked={checked}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.checked)}
+      />
+      {/* Knob is an ::after on the track: `peer-checked:` only reaches siblings
+          of the input, so a nested <span> would never receive the variant. */}
+      <span className="relative shrink-0 h-6 w-11 rounded-full bg-black/[0.12] dark:bg-white/[0.14] transition-colors after:absolute after:top-0.5 after:left-0.5 after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow-sm after:transition-transform after:duration-200 peer-checked:bg-accent-500 peer-checked:shadow-glow peer-checked:after:translate-x-5 peer-focus-visible:ring-2 peer-focus-visible:ring-accent-400/50" />
+    </label>
+  );
+}
+
 /** Page heading with optional eyebrow + subtitle. */
 export function PageTitle({
   eyebrow,

@@ -1,11 +1,19 @@
 import { Link } from "react-router-dom";
-import { useSections, useOverallStats, useStreak, useUpNext, useProgressMap } from "../lib/queries";
+import {
+  useSections,
+  useOverallStats,
+  useStreak,
+  useUpNext,
+  useProgressMap,
+  useTodayCount,
+} from "../lib/queries";
 import { db } from "../lib/db";
 import { useLiveQuery } from "dexie-react-hooks";
 import { Card, Ring, ProgressBar, PageTitle } from "../components/ui";
 import { StreakHeatmap } from "../components/StreakHeatmap";
-import { IconArrowRight, IconFlame, IconPlay } from "../components/icons";
-import { fmtHours, fmtDate, pct } from "../lib/format";
+import { IconArrowRight, IconCheck, IconFlame, IconPlay } from "../components/icons";
+import { usePrefs } from "../lib/prefs";
+import { fmtHours, fmtDate, fmtDuration, pct } from "../lib/format";
 import type { Section } from "../lib/types";
 
 export function Dashboard() {
@@ -13,8 +21,11 @@ export function Dashboard() {
   const overall = useOverallStats();
   const streak = useStreak();
   const upNext = useUpNext();
+  const today = useTodayCount();
+  const dailyGoal = usePrefs((s) => s.dailyGoal);
 
   const overallPct = pct(overall.completed, overall.total);
+  const goalMet = dailyGoal > 0 && today >= dailyGoal;
 
   // projected finish: pace = completions in last 14 days / 14
   const last14 = Object.entries(streak.days)
@@ -52,7 +63,7 @@ export function Dashboard() {
         />
         <div className="relative flex items-center gap-5">
           <Ring value={overallPct} size={92} stroke={8} color="#6366f1" />
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-faint dark:text-zinc-500">
               Overall progress
             </div>
@@ -65,27 +76,57 @@ export function Dashboard() {
             <div className="text-sm text-ink-soft dark:text-zinc-400">
               lessons complete · {fmtHours(overall.remainingSec)} left
             </div>
+            {projectedDate && (
+              <div className="text-[13px] text-ink-faint dark:text-zinc-500 mt-1">
+                on track to finish {projectedDate} · {pace.toFixed(1)}/day
+              </div>
+            )}
           </div>
         </div>
       </Card>
 
       {/* Stats — equal-height cards */}
       <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
-        <StatCard label="Projected finish">
-          {projectedDate ? (
-            <>
-              <div className="font-display text-2xl font-bold tracking-tight">{projectedDate}</div>
-              <div className="text-xs text-ink-faint dark:text-zinc-500 mt-1">
-                at {pace.toFixed(1)} lessons/day
+        <StatCard
+          label="Today's goal"
+          trailing={dailyGoal > 0 ? `${dailyGoal}/day` : "off"}
+        >
+          {dailyGoal > 0 ? (
+            <div className="flex items-center gap-3.5">
+              <Ring
+                value={pct(Math.min(today, dailyGoal), dailyGoal)}
+                size={56}
+                stroke={6}
+                color={goalMet ? "#10b981" : "#6366f1"}
+                label={
+                  goalMet ? (
+                    <IconCheck size={20} className="text-emerald-500" />
+                  ) : (
+                    <span className="font-display text-[13px] font-bold tabular-nums">{today}</span>
+                  )
+                }
+              />
+              <div className="min-w-0">
+                <div className="font-display text-2xl font-bold tracking-tight">
+                  {today}
+                  <span className="text-ink-faint dark:text-zinc-500 text-base font-semibold">
+                    /{dailyGoal}
+                  </span>
+                </div>
+                <div className="text-xs text-ink-faint dark:text-zinc-500 mt-0.5">
+                  {goalMet
+                    ? "goal met — nice work"
+                    : `${dailyGoal - today} to go today`}
+                </div>
               </div>
-            </>
+            </div>
           ) : (
             <>
               <div className="font-display text-2xl font-bold tracking-tight text-ink-faint dark:text-zinc-500">
                 —
               </div>
               <div className="text-xs text-ink-faint dark:text-zinc-500 mt-1">
-                complete a lesson to project a date
+                set a daily goal in Settings
               </div>
             </>
           )}
@@ -117,13 +158,17 @@ export function Dashboard() {
               <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-accent-500 dark:text-accent-300">
                 Up next
               </div>
-              <div className="font-medium truncate mt-0.5">{upNext.title}</div>
+              <div className="font-medium truncate mt-0.5">{upNext.lesson.title}</div>
+              <div className="text-xs text-ink-faint dark:text-zinc-500 truncate mt-0.5">
+                {upNext.courseTitle}
+                {upNext.resumeSec > 15 && ` · paused at ${fmtDuration(upNext.resumeSec)}`}
+              </div>
             </div>
             <Link
-              to={`/lesson/${upNext.id}`}
+              to={`/lesson/${upNext.lesson.id}`}
               className="shrink-0 inline-flex items-center gap-1.5 h-10 px-4 rounded-xl bg-accent-grad text-white text-sm font-medium shadow-glow hover:shadow-glow-lg active:scale-[0.97] transition"
             >
-              Resume
+              {upNext.resumeSec > 15 ? "Resume" : "Start"}
               <IconArrowRight size={16} />
             </Link>
           </div>

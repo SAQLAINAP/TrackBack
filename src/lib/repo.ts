@@ -47,6 +47,8 @@ export async function setStatus(lessonId: string, status: LessonStatus): Promise
     lessonId,
     status,
     completedAt,
+    // Re-watching from scratch should not inherit a stale resume point.
+    positionSec: status === "not_started" ? 0 : existing?.positionSec ?? 0,
     updatedAt: now(),
     deleted: 0,
     dirty: 1,
@@ -58,6 +60,29 @@ export async function toggleComplete(lessonId: string): Promise<void> {
   const existing = await db.progress.get(lessonId);
   const next: LessonStatus = existing?.status === "completed" ? "not_started" : "completed";
   await setStatus(lessonId, next);
+}
+
+/**
+ * Store the playback head so a 90-minute lesson resumes where you left off.
+ *
+ * Called on a timer while the video plays, so it deliberately does NOT call
+ * requestSync() — pushing to Supabase every few seconds would be wasteful. The
+ * row is marked dirty and rides along on the next real sync.
+ */
+export async function savePosition(lessonId: string, positionSec: number): Promise<void> {
+  const existing = await db.progress.get(lessonId);
+  // Never downgrade a completed lesson just because it was scrubbed.
+  const status: LessonStatus = existing?.status === "completed" ? "completed" : "in_progress";
+  await db.progress.put({
+    id: lessonId,
+    lessonId,
+    status,
+    completedAt: existing?.completedAt ?? (status === "completed" ? now() : null),
+    positionSec: Math.max(0, Math.floor(positionSec)),
+    updatedAt: now(),
+    deleted: 0,
+    dirty: 1,
+  });
 }
 
 // ---------- Notes ----------

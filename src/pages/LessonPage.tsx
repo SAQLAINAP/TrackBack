@@ -1,10 +1,10 @@
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import YouTube, { type YouTubeEvent } from "react-youtube";
+import YouTube, { type YouTubeEvent, type YouTubePlayer } from "react-youtube";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "../lib/db";
 import { useLesson, useLessons, useProgressMap, useLessonFlairs } from "../lib/queries";
-import { setStatus, toggleFlair, addMedia } from "../lib/repo";
+import { setStatus, toggleFlair, addMedia, savePosition } from "../lib/repo";
 import { Card, Button, Segmented } from "../components/ui";
 import { FlairChip } from "../components/FlairChip";
 import { NotesEditor } from "../components/NotesEditor";
@@ -12,7 +12,7 @@ import { VoiceRecorder } from "../components/VoiceRecorder";
 import { MediaGallery } from "../components/MediaGallery";
 import { IconArrowLeft, IconArrowRight, IconCheck, IconImage } from "../components/icons";
 import { FLAIRS, type LessonStatus } from "../lib/types";
-import { fmtDateTime } from "../lib/format";
+import { fmtDateTime, fmtDuration } from "../lib/format";
 
 export function LessonPage() {
   const { lessonId } = useParams();
@@ -25,21 +25,76 @@ export function LessonPage() {
   const pmap = useProgressMap();
   const flairs = useLessonFlairs(lessonId);
   const fileRef = useRef<HTMLInputElement>(null);
+  const playerRef = useRef<YouTubePlayer | null>(null);
+  const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // The resume point is captured once per lesson. Reading it live from `pmap`
+  // would re-render the player mid-playback and restart the video.
+  const [startAt, setStartAt] = useState<number | null>(null);
+  useEffect(() => {
+    setStartAt(null);
+    if (!lessonId) return;
+    let cancelled = false;
+    db.progress.get(lessonId).then((p) => {
+      if (cancelled) return;
+      // Finished lessons start over; partial ones rewind 5s for context, and
+      // anything under 15s isn't worth resuming.
+      const pos = p?.status === "completed" ? 0 : p?.positionSec ?? 0;
+      setStartAt(pos > 15 ? Math.max(0, pos - 5) : 0);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [lessonId]);
 
   const { prev, next } = useMemo(() => {
     const idx = siblings.findIndex((l) => l.id === lessonId);
     return { prev: siblings[idx - 1], next: siblings[idx + 1] };
   }, [siblings, lessonId]);
 
+  const stopTicking = () => {
+    if (tickRef.current) clearInterval(tickRef.current);
+    tickRef.current = null;
+  };
+
+  // Flush the final position on unmount / lesson change, so backing out mid-video
+  // doesn't lose up to 5s of progress.
+  useEffect(() => {
+    return () => {
+      stopTicking();
+      const p = playerRef.current;
+      if (p && lessonId) {
+        const t = p.getCurrentTime?.();
+        if (typeof t === "number" && t > 0) void savePosition(lessonId, t);
+      }
+      playerRef.current = null;
+    };
+  }, [lessonId]);
+
   if (!lesson) return <div className="text-ink-faint">Loading…</div>;
 
   const prog = pmap.get(lesson.id);
   const status: LessonStatus = prog?.status ?? "not_started";
+  const resumeFrom = prog?.status === "in_progress" ? prog.positionSec ?? 0 : 0;
 
+  const onReady = (e: YouTubeEvent) => {
+    playerRef.current = e.target;
+  };
   const onPlay = () => {
     if (status === "not_started") setStatus(lesson.id, "in_progress");
+    stopTicking();
+    tickRef.current = setInterval(() => {
+      const t = playerRef.current?.getCurrentTime?.();
+      if (typeof t === "number" && t > 0) void savePosition(lesson.id, t);
+    }, 5000);
+  };
+  const onPause = () => {
+    stopTicking();
+    const t = playerRef.current?.getCurrentTime?.();
+    if (typeof t === "number" && t > 0) void savePosition(lesson.id, t);
   };
   const onEnd = (_e: YouTubeEvent) => {
+    stopTicking();
     setStatus(lesson.id, "completed");
   };
 
@@ -65,17 +120,33 @@ export function LessonPage() {
         {lesson.title}
       </h1>
 
-      {/* Player */}
+      {/* Player — held back until the resume point is loaded, otherwise the
+          iframe would mount at 0s and then need a seek. */}
       <div className="rounded-2xl overflow-hidden border border-black/[0.08] dark:border-white/[0.08] bg-black aspect-video shadow-soft dark:shadow-glow">
-        <YouTube
-          videoId={lesson.videoId}
-          onPlay={onPlay}
-          onEnd={onEnd}
-          className="h-full w-full"
-          iframeClassName="h-full w-full"
-          opts={{ width: "100%", height: "100%", playerVars: { rel: 0, modestbranding: 1 } }}
-        />
+        {startAt !== null && (
+          <YouTube
+            key={lesson.id}
+            videoId={lesson.videoId}
+            onReady={onReady}
+            onPlay={onPlay}
+            onPause={onPause}
+            onEnd={onEnd}
+            className="h-full w-full"
+            iframeClassName="h-full w-full"
+            opts={{
+              width: "100%",
+              height: "100%",
+              playerVars: { rel: 0, modestbranding: 1, start: startAt || undefined },
+            }}
+          />
+        )}
       </div>
+
+      {resumeFrom > 15 && (
+        <p className="-mt-2 text-xs text-ink-faint dark:text-zinc-500 text-center">
+          Resuming from {fmtDuration(Math.max(0, resumeFrom - 5))}
+        </p>
+      )}
 
       {/* Status — equal-width segments so nothing wraps or looks lopsided */}
       <Card className="p-3 sm:p-4 space-y-3">

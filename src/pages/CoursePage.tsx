@@ -4,8 +4,15 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "../lib/db";
 import { useCourse, useLessons, useProgressMap } from "../lib/queries";
 import { Card, ProgressBar } from "../components/ui";
-import { IconArrowLeft, IconCheck, IconExternal, IconNote } from "../components/icons";
+import {
+  IconArrowLeft,
+  IconCheck,
+  IconDownload,
+  IconExternal,
+  IconNote,
+} from "../components/icons";
 import { fmtDuration, fmtDate, pct } from "../lib/format";
+import { exportCourseNotes } from "../lib/backup";
 import { toggleComplete } from "../lib/repo";
 import { FLAIRS, type FlairKind, type LessonStatus } from "../lib/types";
 import { FLAIR_MAP } from "../lib/types";
@@ -66,6 +73,10 @@ export function CoursePage() {
     });
   }, [lessons, pmap, status, flair, flairMap, text]);
 
+  const onExportNotes = () => {
+    if (courseId) void exportCourseNotes(courseId);
+  };
+
   if (!course) return <div className="text-ink-faint">Loading…</div>;
 
   const total = lessons.length;
@@ -91,15 +102,26 @@ export function CoursePage() {
             {done}/{total}
           </span>
         </div>
-        <a
-          href={course.sourceUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex items-center gap-1.5 text-[13px] font-medium text-accent-600 dark:text-accent-300 hover:underline"
-        >
-          Open on YouTube
-          <IconExternal size={14} />
-        </a>
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <a
+            href={course.sourceUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 text-[13px] font-medium text-accent-600 dark:text-accent-300 hover:underline"
+          >
+            Open on YouTube
+            <IconExternal size={14} />
+          </a>
+          {noteSet.size > 0 && (
+            <button
+              onClick={onExportNotes}
+              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-[13px] font-medium text-ink-soft dark:text-zinc-400 bg-black/[0.04] dark:bg-white/[0.06] hover:bg-black/[0.07] dark:hover:bg-white/[0.1] active:scale-[0.97] transition"
+            >
+              <IconDownload size={14} />
+              Export {noteSet.size} note{noteSet.size === 1 ? "" : "s"}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Filters — stacked on mobile so nothing overflows the viewport */}
