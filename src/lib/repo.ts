@@ -88,6 +88,10 @@ export async function seedIfNeeded(): Promise<void> {
         playlistId: c.playlistId,
         sourceUrl: c.sourceUrl,
         order: c.order,
+        // Explicit boolean (rather than the optional undefined) so re-seeding a
+        // course that was previously beta and got promoted upstream clears the
+        // chip instead of leaving a stale flag.
+        beta: c.beta === true,
       })),
     );
     await db.lessons.bulkPut(
@@ -98,6 +102,10 @@ export async function seedIfNeeded(): Promise<void> {
         title: l.title,
         durationSec: l.durationSec,
         order: l.order,
+        externalUrl: l.externalUrl,
+        lang: l.lang,
+        kind: l.kind,
+        summary: l.summary,
       })),
     );
   });

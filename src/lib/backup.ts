@@ -125,10 +125,15 @@ export async function exportCourseNotes(courseId: string): Promise<{ notes: numb
     if (!md) continue;
     n++;
     const p = progMap.get(lesson.id);
+    // External (GitHub-hosted) lessons use their externalUrl; without this
+    // guard the metadata line printed `https://youtu.be/null`.
+    const link = lesson.videoId
+      ? `https://youtu.be/${lesson.videoId}`
+      : lesson.externalUrl ?? null;
     const meta = [
       lesson.durationSec ? fmtDuration(lesson.durationSec) : null,
       p?.status === "completed" && p.completedAt ? `completed ${fmtDate(p.completedAt)}` : null,
-      `https://youtu.be/${lesson.videoId}`,
+      link,
     ].filter(Boolean);
 
     out.push(

@@ -96,9 +96,16 @@ export function CoursePage() {
       </Link>
 
       <div className="space-y-3">
-        <h1 className="font-display text-[21px] sm:text-[26px] font-bold tracking-tight leading-snug text-ink dark:text-white">
-          {course.title}
-        </h1>
+        <div className="flex items-start justify-between gap-3">
+          <h1 className="font-display text-[21px] sm:text-[26px] font-bold tracking-tight leading-snug text-ink dark:text-white min-w-0">
+            {course.title}
+          </h1>
+          {course.beta && (
+            <span className="shrink-0 mt-1 inline-flex items-center rounded-full bg-accent-500/10 dark:bg-accent-400/15 text-accent-600 dark:text-accent-300 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider">
+              Beta
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-3">
           <ProgressBar value={pct(done, total)} />
           <span className="text-sm font-semibold tabular-nums shrink-0">
@@ -112,7 +119,7 @@ export function CoursePage() {
             rel="noreferrer"
             className="inline-flex items-center gap-1.5 text-[13px] font-medium text-accent-600 dark:text-accent-300 hover:underline"
           >
-            Open on YouTube
+            {course.beta ? "Open on GitHub" : "Open on YouTube"}
             <IconExternal size={14} />
           </a>
           {noteSet.size > 0 && (

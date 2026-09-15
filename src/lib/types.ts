@@ -46,15 +46,29 @@ export interface Course {
   playlistId: string | null;
   sourceUrl: string;
   order: number;
+  /** Non-YouTube course; shows a "Beta" chip and its lessons open externally. */
+  beta?: boolean;
 }
 
 export interface Lesson {
   id: string;
   courseId: string;
-  videoId: string;
+  /** Nullable so non-video courses (e.g. the AI Engineering GitHub curriculum)
+   *  can live in the same table. When null, `externalUrl` should be set and the
+   *  LessonPage renders an open-in-new-tab card instead of the embedded player. */
+  videoId: string | null;
   title: string;
   durationSec: number;
   order: number;
+  /** For external/non-YouTube lessons — the canonical link (usually a GitHub
+   *  folder for the AI Engineering course). Also indexed for existence checks. */
+  externalUrl?: string;
+  /** Optional, external-lesson metadata surfaced in the UI. */
+  lang?: string;
+  /** Lesson kind for external lessons — "Learn" | "Build" | "Capstone" today,
+   *  but kept as an open string to survive upstream vocabulary changes. */
+  kind?: string;
+  summary?: string;
 }
 
 // ---- User data tables (synced via Supabase) ----

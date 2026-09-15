@@ -10,7 +10,13 @@ import { FlairChip } from "../components/FlairChip";
 import { NotesEditor } from "../components/NotesEditor";
 import { VoiceRecorder } from "../components/VoiceRecorder";
 import { MediaGallery } from "../components/MediaGallery";
-import { IconArrowLeft, IconArrowRight, IconCheck, IconImage } from "../components/icons";
+import {
+  IconArrowLeft,
+  IconArrowRight,
+  IconCheck,
+  IconExternal,
+  IconImage,
+} from "../components/icons";
 import { FLAIRS, type LessonStatus } from "../lib/types";
 import { fmtDateTime, fmtDuration } from "../lib/format";
 
@@ -30,10 +36,12 @@ export function LessonPage() {
 
   // The resume point is captured once per lesson. Reading it live from `pmap`
   // would re-render the player mid-playback and restart the video.
+  // External (non-YouTube) lessons never mount a player, so this stays null.
+  const isExternal = lesson?.videoId == null;
   const [startAt, setStartAt] = useState<number | null>(null);
   useEffect(() => {
     setStartAt(null);
-    if (!lessonId) return;
+    if (!lessonId || isExternal) return;
     let cancelled = false;
     db.progress.get(lessonId).then((p) => {
       if (cancelled) return;
@@ -45,7 +53,7 @@ export function LessonPage() {
     return () => {
       cancelled = true;
     };
-  }, [lessonId]);
+  }, [lessonId, isExternal]);
 
   const { prev, next } = useMemo(() => {
     const idx = siblings.findIndex((l) => l.id === lessonId);
@@ -121,31 +129,71 @@ export function LessonPage() {
       </h1>
 
       {/* Player — held back until the resume point is loaded, otherwise the
-          iframe would mount at 0s and then need a seek. */}
-      <div className="rounded-2xl overflow-hidden border border-black/[0.08] dark:border-white/[0.08] bg-black aspect-video shadow-soft dark:shadow-glow">
-        {startAt !== null && (
-          <YouTube
-            key={lesson.id}
-            videoId={lesson.videoId}
-            onReady={onReady}
-            onPlay={onPlay}
-            onPause={onPause}
-            onEnd={onEnd}
-            className="h-full w-full"
-            iframeClassName="h-full w-full"
-            opts={{
-              width: "100%",
-              height: "100%",
-              playerVars: { rel: 0, modestbranding: 1, start: startAt || undefined },
-            }}
-          />
-        )}
-      </div>
+          iframe would mount at 0s and then need a seek.
+          External (GitHub-hosted) lessons get an "open in new tab" card
+          instead — there's nothing to embed and auto-complete-on-end has no
+          meaning, so the user marks completion manually below. */}
+      {isExternal ? (
+        <Card className="p-5 sm:p-6 space-y-4">
+          {(lesson.lang || lesson.kind) && (
+            <div className="flex flex-wrap gap-1.5">
+              {lesson.kind && (
+                <span className="inline-flex items-center rounded-full bg-accent-500/10 dark:bg-accent-400/15 text-accent-600 dark:text-accent-300 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider">
+                  {lesson.kind}
+                </span>
+              )}
+              {lesson.lang && (
+                <span className="inline-flex items-center rounded-full bg-black/[0.05] dark:bg-white/[0.08] text-ink-soft dark:text-zinc-300 px-2.5 py-0.5 text-[11px] font-medium">
+                  {lesson.lang}
+                </span>
+              )}
+            </div>
+          )}
+          {lesson.summary && (
+            <p className="text-[14px] leading-relaxed text-ink-soft dark:text-zinc-300 whitespace-pre-line">
+              {lesson.summary}
+            </p>
+          )}
+          {lesson.externalUrl && (
+            <a
+              href={lesson.externalUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 h-11 px-5 rounded-xl bg-ink text-white dark:bg-white dark:text-black text-sm font-semibold hover:bg-black dark:hover:bg-zinc-200 active:scale-[0.97] transition"
+            >
+              Open on GitHub
+              <IconExternal size={15} />
+            </a>
+          )}
+        </Card>
+      ) : (
+        <>
+          <div className="rounded-2xl overflow-hidden border border-black/[0.08] dark:border-white/[0.08] bg-black aspect-video shadow-soft dark:shadow-glow">
+            {startAt !== null && lesson.videoId && (
+              <YouTube
+                key={lesson.id}
+                videoId={lesson.videoId}
+                onReady={onReady}
+                onPlay={onPlay}
+                onPause={onPause}
+                onEnd={onEnd}
+                className="h-full w-full"
+                iframeClassName="h-full w-full"
+                opts={{
+                  width: "100%",
+                  height: "100%",
+                  playerVars: { rel: 0, modestbranding: 1, start: startAt || undefined },
+                }}
+              />
+            )}
+          </div>
 
-      {resumeFrom > 15 && (
-        <p className="-mt-2 text-xs text-ink-faint dark:text-zinc-500 text-center">
-          Resuming from {fmtDuration(Math.max(0, resumeFrom - 5))}
-        </p>
+          {resumeFrom > 15 && (
+            <p className="-mt-2 text-xs text-ink-faint dark:text-zinc-500 text-center">
+              Resuming from {fmtDuration(Math.max(0, resumeFrom - 5))}
+            </p>
+          )}
+        </>
       )}
 
       {/* Status — equal-width segments so nothing wraps or looks lopsided */}

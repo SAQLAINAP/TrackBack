@@ -61,9 +61,16 @@ function CourseRow({ course, color }: { course: Course; color: string }) {
     <Link to={`/course/${course.id}`} className="block">
       <Card className="p-4 sm:p-5" interactive>
         <div className="flex items-start justify-between gap-3">
-          <h3 className="font-display font-semibold text-[15px] leading-snug min-w-0">
-            {course.title}
-          </h3>
+          <div className="flex items-start gap-2 min-w-0">
+            <h3 className="font-display font-semibold text-[15px] leading-snug min-w-0">
+              {course.title}
+            </h3>
+            {course.beta && (
+              <span className="shrink-0 mt-0.5 inline-flex items-center rounded-full bg-accent-500/10 dark:bg-accent-400/15 text-accent-600 dark:text-accent-300 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider">
+                Beta
+              </span>
+            )}
+          </div>
           <span className="text-sm font-semibold tabular-nums shrink-0">{p}%</span>
         </div>
         <ProgressBar value={p} color={color} className="mt-3.5" />

@@ -1,9 +1,26 @@
 // AUTO-GENERATED seed data. Do not edit by hand.
 export interface SeedSection { slug: string; name: string; color: string; order: number; }
-export interface SeedCourse { id: string; sectionSlug: string; title: string; playlistId: string | null; sourceUrl: string; order: number; }
-export interface SeedLesson { id: string; courseId: string; videoId: string; title: string; durationSec: number; order: number; }
+export interface SeedCourse {
+  id: string; sectionSlug: string; title: string;
+  playlistId: string | null; sourceUrl: string; order: number;
+  /** Marks text/link-based courses (no embedded player). Renders a "Beta" chip. */
+  beta?: boolean;
+}
+export interface SeedLesson {
+  id: string; courseId: string;
+  /** Null for external lessons; `externalUrl` is used to open them. */
+  videoId: string | null;
+  title: string; durationSec: number; order: number;
+  externalUrl?: string; lang?: string; kind?: string; summary?: string;
+}
 
-export const seedSections: SeedSection[] = [{"slug":"dsa","name":"DSA","color":"#6366f1","order":0},{"slug":"system_design","name":"System Design","color":"#0ea5e9","order":1},{"slug":"devops","name":"DevOps","color":"#f59e0b","order":2},{"slug":"deep_learning","name":"Deep Learning","color":"#ec4899","order":3},{"slug":"lld","name":"Low Level Design","color":"#8b5cf6","order":4},{"slug":"networking","name":"Networking","color":"#10b981","order":5},{"slug":"kafka","name":"Kafka & Streaming","color":"#84cc16","order":6},{"slug":"distributed_systems","name":"Distributed Systems","color":"#ef4444","order":7}];
+import {
+  AI_ENGINEERING_SECTION,
+  seedAiEngineeringCourses,
+  seedAiEngineeringLessons,
+} from "./aiEngineering";
+
+export const seedSections: SeedSection[] = [{"slug":"dsa","name":"DSA","color":"#6366f1","order":0},{"slug":"system_design","name":"System Design","color":"#0ea5e9","order":1},{"slug":"devops","name":"DevOps","color":"#f59e0b","order":2},{"slug":"deep_learning","name":"Deep Learning","color":"#ec4899","order":3},{"slug":"lld","name":"Low Level Design","color":"#8b5cf6","order":4},{"slug":"networking","name":"Networking","color":"#10b981","order":5},{"slug":"kafka","name":"Kafka & Streaming","color":"#84cc16","order":6},{"slug":"distributed_systems","name":"Distributed Systems","color":"#ef4444","order":7}, AI_ENGINEERING_SECTION];
 
 export const seedCourses: SeedCourse[] = [
   { id:"course_dsa", sectionSlug:"dsa", title:"Strivers A2Z-DSA Course | DSA Playlist | Placements", playlistId:"PLgUwDviBIf0oF6QL8m22w1hIDC1vJ_BHz", sourceUrl:"https://youtube.com/playlist?list=PLgUwDviBIf0oF6QL8m22w1hIDC1vJ_BHz", order:0 },
@@ -716,7 +733,18 @@ export const seedLessons: SeedLesson[] = [
   { id:"l_fR_NB714EAI", courseId:"course_dist_mit6824", videoId:"fR_NB714EAI", title:"Lecture 17: COPS, Causal Consistency", durationSec:5009, order:16 },
   { id:"l_UKdLJ7-0iFM", courseId:"course_dist_mit6824", videoId:"UKdLJ7-0iFM", title:"Lecture 18: Fork Consistency, Certificate Transparency", durationSec:4420, order:17 },
   { id:"l_K_euhRou98Y", courseId:"course_dist_mit6824", videoId:"K_euhRou98Y", title:"Lecture 19: Bitcoin", durationSec:3414, order:18 },
-  { id:"l_XvXK_vZ0BNw", courseId:"course_dist_mit6824", videoId:"XvXK_vZ0BNw", title:"Lecture 20: Blockstack", durationSec:4741, order:19 }
+  { id:"l_XvXK_vZ0BNw", courseId:"course_dist_mit6824", videoId:"XvXK_vZ0BNw", title:"Lecture 20: Blockstack", durationSec:4741, order:19 },
+  ...seedAiEngineeringLessons,
 ];
 
-export const SEED_VERSION = 3;
+// Courses for the AI Engineering beta module are appended after the YouTube
+// ones. push() rather than a fresh binding because seedCourses is already
+// exported by name above and re-exported downstream — mutating the array
+// preserves that identity without renaming the export.
+seedCourses.push(...seedAiEngineeringCourses);
+
+// v4: add the AI Engineering beta module (20 phases · 523 lessons, GitHub-based).
+// Bumping the seedVersion re-bulkPuts sections/courses/lessons — safe because
+// bulkPut is upsert and user rows (progress/notes/flairs/media) key on lessonId
+// and are untouched. See seedIfNeeded in src/lib/repo.ts.
+export const SEED_VERSION = 4;
