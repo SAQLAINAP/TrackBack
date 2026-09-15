@@ -43,7 +43,10 @@ jobs:
           java-version: 21
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+        # v3 default cmdline-tools (16.0) tries to install the deprecated
+        # `tools` package and aborts. v4 defaults to cmdline-tools 20.0, which
+        # drops that fetch — one-line unblock.
+        uses: android-actions/setup-android@v4
 
       - name: Sync Capacitor Android
         run: npx cap sync android
