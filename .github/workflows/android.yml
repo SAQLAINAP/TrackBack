@@ -43,10 +43,14 @@ jobs:
           java-version: 21
 
       - name: Set up Android SDK
-        # v3 default cmdline-tools (16.0) tries to install the deprecated
-        # `tools` package and aborts. v4 defaults to cmdline-tools 20.0, which
-        # drops that fetch — one-line unblock.
+        # The action's default `packages: 'tools platform-tools'` tries to
+        # install the legacy `tools` package, which was removed from
+        # cmdline-tools 16.0+ and hard-fails. We only need `platform-tools`;
+        # everything else (platforms;android-N, build-tools;N.N.N) is pulled
+        # in by the Android Gradle Plugin on demand.
         uses: android-actions/setup-android@v4
+        with:
+          packages: platform-tools
 
       - name: Sync Capacitor Android
         run: npx cap sync android
