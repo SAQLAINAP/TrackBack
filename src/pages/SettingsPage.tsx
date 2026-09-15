@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useLiveQuery } from "dexie-react-hooks";
 import { Card, Button, Segmented, PageTitle, Toggle } from "../components/ui";
 import { SyncBadge } from "../components/SyncBadge";
 import { IconAlert, IconMoon, IconSun } from "../components/icons";
@@ -6,11 +7,16 @@ import { useAuth, signIn, signUp, signOut } from "../lib/auth";
 import { exportBackup, importBackup } from "../lib/backup";
 import { useTheme } from "../lib/theme";
 import { runSync, resetSyncCursor } from "../lib/sync";
-import { resetAllUserData } from "../lib/repo";
+import { forceReseed, resetAllUserData } from "../lib/repo";
 import { usePrefs } from "../lib/prefs";
 import { useStreak } from "../lib/queries";
 import { cancelDaily, remindersSupported, scheduleDaily } from "../lib/reminders";
 import { fmtDate } from "../lib/format";
+import { db, getMeta } from "../lib/db";
+import { SEED_VERSION } from "../data/seed";
+
+/** Kept in sync with android/app/build.gradle `versionName`. */
+const APP_VERSION = "0.7.1";
 
 /**
  * Width is deliberately NOT baked in: Tailwind emits `w-20` before `w-full`, so
@@ -147,12 +153,103 @@ VITE_SUPABASE_ANON_KEY=your-anon-key`}
         </Section>
       )}
 
+      <DiagnosticsSection onMsg={setMsg} />
+
       <DangerSection onMsg={setMsg} />
 
       {msg && (
         <p className="text-[13px] text-ink-soft dark:text-zinc-400 text-center">{msg}</p>
       )}
+
+      <p className="text-center text-[11px] text-ink-faint dark:text-zinc-500 pt-1">
+        TrackBack v{APP_VERSION}
+      </p>
     </div>
+  );
+}
+
+/**
+ * Surfaces the seed-migration state that used to fail silently: on some Android
+ * WebView builds the whole first-run bulkPut aborted with no visible error, so
+ * the AI Engineering module never appeared. Showing the stored vs expected
+ * seedVersion, the live table counts and any persisted error means the next
+ * time anything goes sideways the user can see it — and hit "Re-seed content"
+ * to retry without losing progress (user tables aren't touched).
+ */
+function DiagnosticsSection({ onMsg }: { onMsg: (m: string) => void }) {
+  const [storedVersion, setStoredVersion] = useState<number | null | undefined>(undefined);
+  const [seedError, setSeedError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [tick, setTick] = useState(0);
+
+  useEffect(() => {
+    void getMeta<number>("seedVersion").then((v) => setStoredVersion(v ?? null));
+    void getMeta<string>("seedError").then((e) => setSeedError(e ?? null));
+  }, [tick]);
+
+  const counts = useLiveQuery(
+    async () => ({
+      sections: await db.sections.count(),
+      courses: await db.courses.count(),
+      lessons: await db.lessons.count(),
+    }),
+    [tick],
+  );
+
+  const outOfDate = storedVersion !== undefined && storedVersion !== SEED_VERSION;
+
+  const onReseed = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await forceReseed();
+      setTick((t) => t + 1);
+      onMsg("Content re-seeded.");
+    } catch (e) {
+      setTick((t) => t + 1);
+      onMsg(`Re-seed failed: ${e instanceof Error ? e.message : e}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Section title="Diagnostics">
+      <p className="text-[13px] leading-relaxed text-ink-soft dark:text-zinc-400">
+        If a section is missing or a course looks incomplete, re-seeding rebuilds the bundled
+        catalogue. Your progress, notes, flairs and media are untouched.
+      </p>
+
+      <dl className="grid grid-cols-2 gap-y-1.5 text-[13px]">
+        <dt className="text-ink-soft dark:text-zinc-400">Content version</dt>
+        <dd className="text-right tabular-nums">
+          <span className={outOfDate ? "text-amber-600 dark:text-amber-400" : ""}>
+            {storedVersion === undefined ? "…" : storedVersion ?? "unset"}
+          </span>
+          <span className="text-ink-faint dark:text-zinc-500"> / {SEED_VERSION}</span>
+        </dd>
+
+        <dt className="text-ink-soft dark:text-zinc-400">Sections</dt>
+        <dd className="text-right tabular-nums">{counts?.sections ?? "…"}</dd>
+
+        <dt className="text-ink-soft dark:text-zinc-400">Courses</dt>
+        <dd className="text-right tabular-nums">{counts?.courses ?? "…"}</dd>
+
+        <dt className="text-ink-soft dark:text-zinc-400">Lessons</dt>
+        <dd className="text-right tabular-nums">{counts?.lessons ?? "…"}</dd>
+      </dl>
+
+      {seedError && (
+        <div className="rounded-xl px-3 py-2.5 bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20 text-[12px] leading-relaxed break-words">
+          <div className="font-medium mb-0.5">Last seed error</div>
+          <div className="font-mono">{seedError}</div>
+        </div>
+      )}
+
+      <Button variant="outline" full disabled={busy} onClick={() => void onReseed()}>
+        {busy ? "Re-seeding…" : "Re-seed content"}
+      </Button>
+    </Section>
   );
 }
 

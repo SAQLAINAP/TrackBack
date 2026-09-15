@@ -70,46 +70,98 @@ async function purgeBogusLessons(): Promise<void> {
   if (tombstoned) requestSync();
 }
 
+/**
+ * First run and every content upgrade: mirror the bundled catalogue into
+ * IndexedDB.
+ *
+ * Wrapping all three bulkPuts in one transaction — the original design — is
+ * technically the neat move (all-or-nothing), but the Android WebView aborts
+ * a single 1000+ row bulkPut with no visible error, and the whole migration
+ * silently rolls back. The AI Engineering module (523 lessons on top of ~590
+ * existing) hit that ceiling on a real device, leaving `seedVersion` stuck at
+ * the pre-migration value and the new section invisible.
+ *
+ * Each table now runs in its own transaction and lessons are chunked. Order
+ * still matters (sections → courses → lessons) because the UI joins on the
+ * foreign keys, but a failure late in the sequence no longer wipes out the
+ * earlier writes. The stored `seedVersion` is bumped only after everything
+ * succeeds; any error is persisted to `seedError` for Settings → Diagnostics
+ * to surface.
+ */
+const LESSON_CHUNK = 200;
+
 export async function seedIfNeeded(): Promise<void> {
   await purgeBogusLessons();
 
   const version = await getMeta<number>("seedVersion");
   if (version === SEED_VERSION) return;
 
-  await db.transaction("rw", db.sections, db.courses, db.lessons, async () => {
-    await db.sections.bulkPut(
-      seedSections.map((s) => ({ id: s.slug, name: s.name, color: s.color, order: s.order })),
-    );
-    await db.courses.bulkPut(
-      seedCourses.map((c) => ({
-        id: c.id,
-        sectionId: c.sectionSlug,
-        title: c.title,
-        playlistId: c.playlistId,
-        sourceUrl: c.sourceUrl,
-        order: c.order,
-        // Explicit boolean (rather than the optional undefined) so re-seeding a
-        // course that was previously beta and got promoted upstream clears the
-        // chip instead of leaving a stale flag.
-        beta: c.beta === true,
-      })),
-    );
-    await db.lessons.bulkPut(
-      seedLessons.map((l) => ({
-        id: l.id,
-        courseId: l.courseId,
-        videoId: l.videoId,
-        title: l.title,
-        durationSec: l.durationSec,
-        order: l.order,
-        externalUrl: l.externalUrl,
-        lang: l.lang,
-        kind: l.kind,
-        summary: l.summary,
-      })),
-    );
-  });
-  await setMeta("seedVersion", SEED_VERSION);
+  await setMeta("seedError", null);
+
+  const sectionRows = seedSections.map((s) => ({
+    id: s.slug,
+    name: s.name,
+    color: s.color,
+    order: s.order,
+  }));
+  const courseRows = seedCourses.map((c) => ({
+    id: c.id,
+    sectionId: c.sectionSlug,
+    title: c.title,
+    playlistId: c.playlistId,
+    sourceUrl: c.sourceUrl,
+    order: c.order,
+    // Explicit boolean (rather than the optional undefined) so re-seeding a
+    // course that was previously beta and got promoted upstream clears the
+    // chip instead of leaving a stale flag.
+    beta: c.beta === true,
+  }));
+  const lessonRows = seedLessons.map((l) => ({
+    id: l.id,
+    courseId: l.courseId,
+    videoId: l.videoId,
+    title: l.title,
+    durationSec: l.durationSec,
+    order: l.order,
+    externalUrl: l.externalUrl,
+    lang: l.lang,
+    kind: l.kind,
+    summary: l.summary,
+  }));
+
+  try {
+    await db.transaction("rw", db.sections, async () => {
+      await db.sections.bulkPut(sectionRows);
+    });
+    await db.transaction("rw", db.courses, async () => {
+      await db.courses.bulkPut(courseRows);
+    });
+    for (let i = 0; i < lessonRows.length; i += LESSON_CHUNK) {
+      const batch = lessonRows.slice(i, i + LESSON_CHUNK);
+      await db.transaction("rw", db.lessons, async () => {
+        await db.lessons.bulkPut(batch);
+      });
+    }
+    await setMeta("seedVersion", SEED_VERSION);
+  } catch (e) {
+    // Persist the failure so Settings → Diagnostics can show it, then rethrow
+    // so main.tsx's .catch still logs to the devtools console.
+    const message = e instanceof Error ? e.message : String(e);
+    await setMeta("seedError", `${message} (target seedVersion=${SEED_VERSION})`);
+    throw e;
+  }
+}
+
+/**
+ * Force the next boot's seed step to run again. Used by Settings →
+ * Diagnostics when a partial or failed migration has left the catalogue
+ * incomplete. Non-destructive: user rows (progress, notes, flairs, media) live
+ * in separate tables and are not touched here.
+ */
+export async function forceReseed(): Promise<void> {
+  await setMeta("seedVersion", null);
+  await setMeta("seedError", null);
+  await seedIfNeeded();
 }
 
 // ---------- Progress ----------
